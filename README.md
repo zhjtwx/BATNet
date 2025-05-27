@@ -9,7 +9,7 @@
 4. [Data Preparation](#data-preparation) 
 5. [Model Architecture](#model-architecture)
 6. [Training](#training)
-7. [Sample Data](#Sample Data)
+7. [Sample Data](#Sample-Data)
 
 ## Key Features
 
@@ -157,4 +157,4 @@ python CE-BATCls/ce_train.py # Please modify the corresponding hyperparameters i
 ```
 
 ## Sample Data
-We uploaded 8 chest CT images from the dataset for demonstration (3 for fat segmentation and 5 for brown fat classification). The data address is in the data folder, and its distribution can be seen in the Directory Structure section. Please note that the sample data is provided only to allow users to verify the workflow of the provided code. Since model weights are a key component of the BATNet model, which needs to be applied to business in the future, we cannot disclose the specific values ​​of model weights at present. Users can train the model with their own datasets to obtain their own model weights.
+We uploaded 8 chest CT images from the dataset for demonstration (3 for fat segmentation and 5 for brown fat classification). Please download the data at the following link (https://zenodo.org/records/15524145/files/data.zip?download=1). After downloading the data, please unzip the data under BATNet. Its distribution can be viewed in the directory structure section. Please note that the sample data is provided only to allow users to verify the workflow of the provided code. Since model weights are a key component of the BATNet model, which needs to be applied to business in the future, we cannot disclose the specific values ​​of model weights at present. Users can train the model with their own datasets to obtain their own model weights.
