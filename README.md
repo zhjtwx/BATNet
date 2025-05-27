@@ -1,6 +1,6 @@
 # BATNet: Symmetry-Aware Deep Learning for Brown Adipose Tissue Detection
 
-![BATNet Workflow](docs/images/pipeline.png)
+![BATNet Workflow](model.png)
 
 ## Table of Contents
 1. [Key Features](#key-features)
