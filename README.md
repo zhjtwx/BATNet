@@ -59,7 +59,7 @@ at_seg_model = InfATMask(model_file="mg_stseg.pth", # MG_ATSEG training saved mo
                             )
 # Run seg
 # The input is the entire DICOM saved nii format data，The output is the fat segmentation mask corresponding to the entire nii
-at_seg_mask = seg_at_model.inf_case_at(ct_nii_path='./BATNet/data/cls_data/train/case_001/image.nii.gz') 
+at_seg_mask = seg_at_model.inf_case_at(ct_nii_path='./data/cls_data/train/case_001/image.nii.gz') 
 ```
 
 #### Classification of BAT
@@ -70,11 +70,11 @@ from ce_infer import InfATMask
 # Initialize 
 predictor = BATInference(
         model_path='ce_batcis.pth', # CE_BATCIs training saved model
-        device='cuda'  # 或 'cpu'
+        device='cuda'  # or 'cpu'
     )
 # Run classification
 predictor.batch_predict(
-        data_dir='./BATNet/data',
+        data_dir='./data/cls_data/train/case_*',
         output_csv='prediction_results.csv'
     )
 
