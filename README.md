@@ -49,11 +49,7 @@ The installation typically takes:
 - May extend to **30-45 minutes** if compilation is required for your specific system
 
 ### Notes
-some packages like pycuda and mmcv-full require compatible system environments
-
-GPU-related packages will auto-detect CUDA 10.1 by default
-
-If interrupted, you can resume installation with --ignore-installed flag
+Some packages like pycuda and mmcv-full require compatible system environments. GPU-related packages will auto-detect CUDA 10.1 by default. If interrupted, you can resume installation with --ignore-installed flag
 
 ## Quick Start
 
