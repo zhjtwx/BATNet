@@ -10,6 +10,7 @@
 5. [Model Architecture](#model-architecture)
 6. [Training](#training)
 7. [Sample Data](#Sample-Data)
+8. [Reproduction Instructions](#Reproduction-Instructions)
 
 ## Key Features
 
@@ -169,3 +170,5 @@ python CE-BATCls/ce_train.py # Please modify the corresponding hyperparameters i
 ## Sample Data
 We uploaded 8 chest CT images from the dataset for demonstration (3 for fat segmentation and 5 for brown fat classification). Please download the data at the following link (https://zenodo.org/records/15524145/files/data.zip?download=1). After downloading the data, please unzip the data under BATNet. Its distribution can be viewed in the directory structure section. Please note that the sample data is provided only to allow users to verify the workflow of the provided code. Since model weights are a key component of the BATNet model, which needs to be applied to business in the future, we cannot disclose the specific values ​​of model weights at present. Users can train the model with their own datasets to obtain their own model weights.
 
+## Reproduction Instructions
+To demonstrate the workflow using the provided 8 sample cases download the data from Zenodo and run the demo, which will complete in approximately 10-20 minutes on an NVIDIA TITAN XP GPU. Please note this simplified demo uses processed intermediate outputs to verify the pipeline architecture, while the full research implementation requires training with larger datasets. Due to ongoing clinical deployment preparations, the complete model weights and full training data are not currently available for public release. Researchers are encouraged to train the model using their own datasets following our architecture specifications, and may contact the authors for potential collaboration opportunities to access extended validation datasets.
