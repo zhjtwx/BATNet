@@ -94,6 +94,9 @@ predictor.batch_predict(
 | case0 |   0.12653 | 0 | 0.2178 |
 | ... | ... | ... | ... |
 
+#### Model inference time
+On an NVIDIA TITAN XP GPU, BATNet processes standard chest CT scans (512×512×300 slices) in 15-30 seconds per case end-to-end, with peak VRAM usage of 10.5GB. The pipeline comprises: (1) 10-second preprocessing (HU normalization/resampling), (2) 3-6 seconds/slice adipose tissue segmentation using the Mirror Attention U-Net, and (3) 2-5 seconds contralateral patch analysis via the ResNet-Transformer classifier. Continuous processing achieves 2-3 cases/minute throughput. Demo executions on the provided 8-case sample dataset complete in 2-4 minutes, with variations depending on slice count (see Sample Data). 
+
 ## Data Preparation
 ### Directory Structure
 ```python
@@ -165,3 +168,4 @@ python CE-BATCls/ce_train.py # Please modify the corresponding hyperparameters i
 
 ## Sample Data
 We uploaded 8 chest CT images from the dataset for demonstration (3 for fat segmentation and 5 for brown fat classification). Please download the data at the following link (https://zenodo.org/records/15524145/files/data.zip?download=1). After downloading the data, please unzip the data under BATNet. Its distribution can be viewed in the directory structure section. Please note that the sample data is provided only to allow users to verify the workflow of the provided code. Since model weights are a key component of the BATNet model, which needs to be applied to business in the future, we cannot disclose the specific values ​​of model weights at present. Users can train the model with their own datasets to obtain their own model weights.
+
