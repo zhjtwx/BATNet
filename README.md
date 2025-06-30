@@ -43,6 +43,17 @@ cd BATNet
 # Install core packages
 pip install -r requirements.txt
 ```
+### Expected Install Time
+The installation typically takes:
+- **15-25 minutes** on a normal desktop with good internet connection
+- May extend to **30-45 minutes** if compilation is required for your specific system
+
+### Notes
+some packages like pycuda and mmcv-full require compatible system environments
+
+GPU-related packages will auto-detect CUDA 10.1 by default
+
+If interrupted, you can resume installation with --ignore-installed flag
 
 ## Quick Start
 
