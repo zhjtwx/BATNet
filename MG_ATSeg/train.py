@@ -27,7 +27,22 @@ except ImportError:
     from torch.utils.model_zoo import load_url as load_state_dict_from_url
 
 
+# ============================================================
+# Training Function
+# ============================================================
+
+
 def trainer(seg_model, train_data, train_epoch, criterion, optimizer):
+    """
+    Train the segmentation model for one epoch.
+
+    Args:
+        seg_model (nn.Module): The segmentation model to be trained.
+        train_data (DataLoader): DataLoader providing training batches.
+        train_epoch (int): Current training epoch.
+        criterion (loss function): Loss function (e.g., BCE+Dice loss).
+        optimizer (torch.optim.Optimizer): Optimization algorithm.
+    """
     seg_model.train()
     tol_loss = 0
     for idx, batch in enumerate(train_data):
@@ -50,7 +65,24 @@ def trainer(seg_model, train_data, train_epoch, criterion, optimizer):
                 train_epoch, t_idx, len(train_data), 100. * t_idx / len(train_data), tol_loss / t_idx))
 
 
+
+# ============================================================
+# Validation Function
+# ============================================================
+
+
 def val(seg_model, val_data, criterion):
+    """
+    Evaluate model performance on validation or test data.
+
+    Args:
+        seg_model (nn.Module): The trained segmentation model.
+        val_data (DataLoader): Validation DataLoader.
+        criterion (loss function): Loss function.
+
+    Returns:
+        float: Average Dice coefficient on the validation set.
+    """
     seg_model.eval()
     tol_loss = 0
     tol_dice = 0
@@ -82,6 +114,17 @@ def cal_dice(output, target, eps=1e-6):
 
 
 def load_model(lr, epoch_list, num_gpu):
+    """
+    Initialize model, optimizer, scheduler, and loss function.
+
+    Args:
+        lr (float): Initial learning rate.
+        epoch_list (list): Milestones for learning rate decay.
+        num_gpu (list): List of GPU device IDs for DataParallel.
+
+    Returns:
+        tuple: (seg_model, criterion, optimizer, scheduler)
+    """
     seg_model = MAMUnet(5, 2)
     if use_gpu:
         seg_model = seg_model.cuda()
