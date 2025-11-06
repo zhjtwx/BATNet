@@ -42,6 +42,17 @@ This repository has been tested on NVIDIA TITANXP. Configurations (e.g batch siz
 git clone --recurse-submodules https://github.com/zhjtwx/BATNet.git
 cd BATNet
 # Install core packages
+1.Create Conda Environment
+conda create -n batnet python=3.6.13 -y
+conda activate batnet
+2.Upgrade Pip and Install System Dependencies
+pip install --upgrade pip
+apt update && apt install -y libxml2 libgl1-mesa-glx  # Essential libraries
+3.Install CUDA Toolkit
+conda install -c conda-forge cudatoolkit=11.3 -y  # Use conda-forge for better compatibility
+4.Install PyTorch with CUDA 11.3
+pip install torch==1.10.0+cu113 torchvision==0.11.0+cu113 -f https://download.pytorch.org/whl/torch_stable.html
+5.Install Other
 pip install -r requirements.txt
 ```
 ### Expected Install Time
