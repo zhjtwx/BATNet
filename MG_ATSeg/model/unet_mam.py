@@ -3,6 +3,11 @@ from torch import nn
 
 
 class DoubleConv(nn.Module):
+    """
+    Applies two consecutive convolutional layers each followed by
+    Batch Normalization and ReLU activation.
+    This is the basic building block for feature extraction in U-Net.
+    """
     def __init__(self, in_ch, out_ch):
         super(DoubleConv, self).__init__()
         self.conv = nn.Sequential(
@@ -19,6 +24,14 @@ class DoubleConv(nn.Module):
 
 
 class MAMAttention(nn.Module):
+    """
+    Mirror Attention Module (MAM):
+    Introduces contralateral (left-right) attention by comparing a feature map
+    with its horizontally flipped version.
+
+    The goal is to capture symmetrical anatomical features — for example,
+    fat distribution, lung lobes, or other bilateral structures in medical images.
+    """
     def __init__(self, in_channels):
         super(MAMAttention, self).__init__()
         self.conv = nn.Conv2d(in_channels, in_channels, kernel_size=1)
@@ -28,9 +41,8 @@ class MAMAttention(nn.Module):
         """
         Args:
             x (torch.Tensor): Input feature map with shape [batch, channels, height, width]
-
         Returns:
-            torch.Tensor: Attention-modulated feature map
+            torch.Tensor: Attention-modulated feature map emphasizing symmetrical features.
         """
         # Mirror the feature map along the width dimension (left-right axis)
         x_mirrored = torch.flip(x, dims=[-1])
@@ -49,7 +61,17 @@ class MAMAttention(nn.Module):
 
 
 class MAMUnet(nn.Module):
+    """
+    MAM-Unet: A U-Net architecture enhanced with the Mirror Attention Module (MAM).
+    MAM blocks are inserted in deeper encoder and decoder layers
+    to emphasize bilateral anatomical consistency.
+    """
     def __init__(self, in_ch, out_ch):
+        """
+        Args:
+            in_ch (int): Number of input channels (e.g., 5 for multi-slice input)
+            out_ch (int): Number of output channels (e.g., 2 for binary segmentation)
+        """
         super(MAMUnet, self).__init__()
 
         self.conv1 = DoubleConv(in_ch, 64)
@@ -106,9 +128,3 @@ class MAMUnet(nn.Module):
         out = nn.Softmax()(c10)
         return out
 
-# x = torch.rand(4, 5, 512,512)
-#
-# y = MAMUnet(5, 2)
-# for i in y.parameters():
-#     print(i)
-# print(y(x))
