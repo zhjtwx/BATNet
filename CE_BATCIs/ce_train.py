@@ -41,12 +41,15 @@ class Trainer:
         self.val_loader = val_loader
         self.device = device
 
-        self.optimizer = optim.AdamW(model.parameters(), lr=1e-4, weight_decay=1e-5)
-        self.case_criterion = nn.BCEWithLogitsLoss()
-        self.patch_criterion = nn.CrossEntropyLoss(ignore_index=-1)
-
+        self.optimizer = optim.AdamW(
+            filter(lambda p: p.requires_grad, model.parameters()),
+            lr=2e-5, weight_decay=1e-5
+        )
+        self.case_criterion = nn.CrossEntropyLoss(weight=torch.tensor([1.5, 1.0]).to(device),
+                                                  ignore_index=-1)
+        self.patch_criterion = nn.CrossEntropyLoss(weight=torch.tensor([1.5, 1.0]).to(device),
+                                                   ignore_index=-1)
         self.scaler = GradScaler()
-
         self.best_val_auc = 0
 
     def train_epoch(self):
@@ -59,21 +62,17 @@ class Trainer:
             left_labels = batch['left_patches_label'].to(self.device)  # (B,16)
             right_labels = batch['right_patches_label'].to(self.device)
             case_labels = batch['label'].to(self.device)  # (B,)
-
-            patch_labels = torch.cat([
-                left_labels.view(-1),  # (B*16)
-                right_labels.view(-1)
-            ])  # (2*B*16)
+            patch_labels = torch.cat([left_labels, right_labels], dim=1)
             self.optimizer.zero_grad()
             with autocast():
                 case_pred, patch_pred = self.model(left, right)
-                case_loss = self.case_criterion(case_pred.squeeze(), case_labels.float())
-
+                case_loss = self.case_criterion(case_pred.view(-1, 2), case_labels.long().view(-1))
                 patch_loss = self.patch_criterion(
                     patch_pred.view(-1, 2),
                     patch_labels.long().view(-1)
                 )
                 total_loss = 0.7 * case_loss + 0.3 * patch_loss
+                # total_loss = case_loss
             self.scaler.scale(total_loss).backward()
             self.scaler.step(self.optimizer)
             self.scaler.update()
@@ -98,8 +97,8 @@ class Trainer:
                 labels = batch['label'].to(self.device)
 
                 case_pred, _ = self.model(left, right)
-                case_preds.append(case_pred.cpu())
-                case_labels.append(labels.cpu())
+                case_preds.append(torch.softmax(case_pred, dim=1)[:, 1].view(-1).cpu())
+                case_labels.append(labels.view(-1).cpu())
 
         case_preds = torch.cat(case_preds).numpy()
         case_labels = torch.cat(case_labels).numpy()
@@ -115,18 +114,14 @@ class Trainer:
                   f"Train Case Loss: {train_metrics['case_loss']:.4f} | "
                   f"Train Patch Loss: {train_metrics['patch_loss']:.4f} | "
                   f"Val AUC: {val_metrics['auc']:.4f}")
+        torch.save(self.model.state_dict(), save_path)
 
-            if val_metrics['auc'] > self.best_val_auc:
-                self.best_val_auc = val_metrics['auc']
-                torch.save(self.model.state_dict(), save_path)
-                print(f"New best model saved with AUC {self.best_val_auc:.4f}")
 
 
 if __name__ == "__main__":
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-    case_dirs = glob.glob('./data/cls_data/train/case*')
-
+    df = pd.read_csv('./data/crop_744/info.csv')
+    case_dirs = df['case_id'].tolist()
     train_dataset = BATDataset(
         root_paths=case_dirs,
         patch_size=32,
@@ -141,19 +136,19 @@ if __name__ == "__main__":
 
     train_loader = DataLoader(
         train_dataset,
-        batch_size=5,
+        batch_size=32*8,
         shuffle=True,
-        num_workers=4,
-        pin_memory=True if torch.cuda.is_available() else False
+        num_workers=8,
+        pin_memory=True
     )
 
     val_loader = DataLoader(
         val_dataset,
-        batch_size=5,
+        batch_size=32*8,
         shuffle=False,
-        num_workers=2,
+        num_workers=6,
         pin_memory=True
     )
     model = CEBATCls()
     trainer = Trainer(model, train_loader, val_loader, device)
-    trainer.train(epochs=5)
+    trainer.train(epochs=51)
