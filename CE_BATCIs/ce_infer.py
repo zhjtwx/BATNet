@@ -9,140 +9,149 @@ sys.path.append('.')
 from pro_at_patch import SymmetricalATProcessor
 sys.path.append('./CE_BATCIs')
 from model.resnet_cim import CEBATCls
+from ce_dataset import BATDataset
+from torch.utils.data import DataLoader
+import pandas as pd
+from glob import glob
+import os
+import multiprocessing as mp
 
 
+os.environ['CUDA_VISIBLE_DEVICES'] = '0, 1'
 class BATInference:
-    def __init__(self, model_path, device='cuda', seg_model_file=None, dtypes={'ct': 'float32', 'mask': 'float32'}):
+    def __init__(self, cls_model_path, device='cuda', seg_model_path=None,
+                 dtypes={'ct': 'float32', 'mask': 'float32'}):
+        """
+        A class for running inference using a trained BAT classification model
+        and (optionally) a segmentation model for automatic patch extraction.
 
+        Attributes:
+            model (torch.nn.Module): The trained classification model.
+            device (torch.device): The computation device ('cuda' or 'cpu').
+            seg_model_path (str): Path to the segmentation model.
+            patch_size (int): The size of the input patches (default: 32).
+        """
         self.device = torch.device(device if torch.cuda.is_available() else 'cpu')
-        self.model = CEBATCls().to(self.device)
-        self.model.load_state_dict(torch.load(model_path, map_location=self.device))
+        self.model = self.load_cls_model(cls_model_path, self.device)
+
         self.model.eval()
         self.patch_size = 32
         self.dtypes = dtypes
-        self.seg_model = None
-        if seg_model_file is not None:
-            self.seg_model = SymmetricalATProcessor(model_file=seg_model_file)
+        self.seg_model_path = seg_model_path
 
-    def predict_case(self, ct_path, bat_path, at_path, left_patch_path, right_patch_path, left_label_path, right_label_path):
-        if os.path.exists(left_patch_path) and  os.path.exists(right_patch_path) \
-                and os.path.exists(left_label_path) and os.path.exists(right_label_path):
-            left_patch = nib.load(left_patch_path).get_fdata().astype(self.dtypes['ct'])
-            right_patch = nib.load(right_patch_path).get_fdata().astype(self.dtypes['ct'])
-            left_label = nib.load(left_label_path).get_fdata().astype(self.dtypes['mask'])
-            right_label = nib.load(right_label_path).get_fdata().astype(self.dtypes['mask'])
-        else:
-            # 使用分割模型生成patch
-            if self.seg_model is None:
-                raise ValueError("Segmentation model is required when cached patches not available")
-            # 检查必要的输入文件
-            if not os.path.exists(ct_path):
-                raise FileNotFoundError(f"CT file not found: {ct_path}")
-            at_path = bat_path if os.path.exists(at_path) else None
-            bat_path = bat_path if os.path.exists(bat_path) else None
+    def load_cls_model(self, cls_model_path, device):
+        """
+        Load the classification model and its parameters.
 
-            left_patch, right_patch, left_label, right_label = self.seg_model.process(ct_path, at_path, bat_path)
+        Args:
+            cls_model_path (str): Path to the classification model checkpoint (.pth).
+            device (torch.device): Target device for model loading.
 
-            # 保存生成的patch供下次使用
-            nib.save(nib.Nifti1Image(left_patch, np.eye(4)), left_patch_path)
-            nib.save(nib.Nifti1Image(right_patch, np.eye(4)), right_patch_path)
-            nib.save(nib.Nifti1Image(left_label, np.eye(4)), left_label_path)
-            nib.save(nib.Nifti1Image(right_label, np.eye(4)), right_label_path)
+        Returns:
+            model (torch.nn.Module): The initialized classification model.
+        """
+        model = CEBATCls().to(device)
+        case_state_dict = torch.load(cls_model_path, map_location=device)
+        new_state_dict = {}
+        for k, v in case_state_dict.items():
+            if k.startswith('module.'):
+                name = k[7:]
+            else:
+                name = k
+            new_state_dict[name] = v
+        model.load_state_dict(new_state_dict)
+        model.to(device)
+        return model
 
-        # 转换为张量
-        left_tensor = torch.tensor(left_patch, dtype=torch.float32).unsqueeze(0).to(self.device)  # (1,16,2,32,32,32)
-        right_tensor = torch.tensor(right_patch, dtype=torch.float32).unsqueeze(0).to(self.device)
+    def batch_predict(self, case_dirs):
+        """
+        Perform batch inference on multiple cases.
 
-        # 推理
+        Args:
+            case_dirs (list): List of directories, each containing one case’s NIfTI files.
+
+        Returns:
+            np.ndarray: Array of case-level prediction probabilities for the positive class.
+        """
+        infer_dataset = BATDataset(
+            root_paths=case_dirs,
+            patch_size=32,
+            seg_model_file=self.seg_model_path,
+            save_nii=False
+        )
+
+        infer_loader = DataLoader(
+            infer_dataset,
+            batch_size=32,
+            shuffle=False,
+            num_workers=6
+        )
+        self.model.eval()
+        case_preds = []
         with torch.no_grad():
-            case_prob, patch_preds = self.model(left_tensor, right_tensor)
-            case_prob = case_prob.squeeze().item()
+            for batch in infer_loader:
+                left = batch['left_patches'].to(self.device)
+                right = batch['right_patches'].to(self.device)
+                case_pred, _ = self.model(left, right)
+                case_preds.append(torch.softmax(case_pred, dim=1)[:, 1].view(-1).cpu())
+        case_preds = torch.cat(case_preds).numpy()
+        return case_preds
 
-            # 转换patch预测结果
-            patch_probs = torch.softmax(patch_preds.view(-1, 2), dim=1)[:, 1]  # 获取阳性概率
-            patch_probs = patch_probs.cpu().numpy().reshape(16, 2)  # 左右各16个patch
 
-        return {
-            'case_prob': case_prob,
-            'patch_probs': patch_probs,
-            'left_patches': left_patch,
-            'right_patches': right_patch
-        }
+def infer_main(case_dirs):
+    mp.set_start_method('spawn', force=True)
+    predictor = BATInference(
+        cls_model_path='./model_weights/ce_batcis_model.pth',
+        device='cuda',
+        seg_model_path='./model_weights/mg_atseg_model.pth'
+    )
+    out_pres = predictor.batch_predict(case_dirs)
+    return out_pres
 
-    def visualize_results(self, result, save_path=None):
-        fig, axes = plt.subplots(2, 2, figsize=(15, 12))
-        axes[0, 0].bar(['Negative', 'Positive'], [1 - result['case_prob'], result['case_prob']])
-        axes[0, 0].set_title(f'Case Level Prediction: {result["case_prob"]:.3f}')
-        axes[0, 0].set_ylim(0, 1)
 
-        im = axes[0, 1].imshow(result['patch_probs'], cmap='Reds', vmin=0, vmax=1)
-        axes[0, 1].set_title('Patch Prediction Heatmap')
-        axes[0, 1].set_xlabel('Left/Right (0:Left, 1:Right)')
-        axes[0, 1].set_ylabel('Patch Index')
-        plt.colorbar(im, ax=axes[0, 1])
+def nii_externa_testset_10():
+    df = pd.read_csv('./data/nii_10/info.csv')
+    case_dirs = df['case_id'].tolist()
+    out_pres = infer_main(case_dirs)
+    df['pre'] = out_pres
+    df.to_csv('./data/nii_10/infer_info.csv', index=False)
 
-        max_idx = np.unravel_index(np.argmax(result['patch_probs']), result['patch_probs'].shape)
-        patch_type = 'left' if max_idx[1] == 0 else 'right'
-        sample_patch = result[f'{patch_type}_patches'][max_idx[0]]
 
-        axes[1, 0].imshow(sample_patch[0, 16, :, :], cmap='gray')
-        axes[1, 0].set_title(f'Max Prob Patch CT (Prob: {result["patch_probs"][max_idx]:.2f})')
+def infer_internal_testset_182():
+    df = pd.read_csv('./data/crop_internal_testset_182/info.csv')
+    case_dirs = df['case_id'].tolist()
+    out_pres = infer_main(case_dirs)
+    df['pre'] = out_pres
+    df.to_csv('./data/crop_internal_testset_182/infer_info.csv', index=False)
 
-        axes[1, 1].imshow(sample_patch[0, 16, :, :], cmap='gray')
-        axes[1, 1].imshow(sample_patch[1, 16, :, :], alpha=0.5, cmap='Reds')
-        axes[1, 1].set_title('CT with AT Mask Overlay')
+def infer_externa_testset_744():
+    df = pd.read_csv('./data/crop_744/info.csv')
+    case_dirs = df['case_id'].tolist()
+    out_pres = infer_main(case_dirs)
+    df['pre'] = out_pres
+    df.to_csv('./data/crop_744/infer_info.csv', index=False)
 
-        plt.tight_layout()
-        if save_path:
-            plt.savefig(save_path, dpi=300, bbox_inches='tight')
-        else:
-            plt.show()
-        plt.close()
+def infer_lzy_case_14_nii():
+    df = pd.read_csv('./data/nii_lzy_testset_28/info.csv')
+    case_dirs = df['case_id'].tolist()
+    out_pres = infer_main(case_dirs)
+    df['pre'] = out_pres
+    df.to_csv('./data/nii_lzy_testset_28/infer_info.csv', index=False)
 
-    def batch_predict(self, data_dir, output_csv='results.csv'):
-        import pandas as pd
-        from glob import glob
-        import os
-        case_dirs = sorted(glob(os.path.join(data_dir, '*/*/*')))
 
-        results = []
-        for case_dir in tqdm(case_dirs, desc='Processing Cases'):
-            try:
-                ct_path = os.path.join(case_dir, 'image.nii.gz')
-                bat_path = os.path.join(case_dir, 'brown_fat_mask.nii.gz')
-                at_path = os.path.join(case_dir, 'fat_mask.nii.gz')
-                left_patch_path = os.path.join(case_dir, 'ct_at_left_patch.nii.gz')
-                right_patch_path = os.path.join(case_dir, 'ct_at_right_patch.nii.gz')
-                left_label_path = os.path.join(case_dir, 'ct_at_left_label.nii.gz')
-                right_label_path = os.path.join(case_dir, 'ct_at_right_label.nii.gz')
+def infer_nc_case_252_nii():
+    df = pd.read_csv('./data/nii_nc_testset_252/info.csv')
+    case_dirs = df['case_id'].tolist()
+    out_pres = infer_main(case_dirs)
+    df['pre'] = out_pres
+    df.to_csv('./data/nii_nc_testset_252/infer_info.csv', index=False)
 
-                if not os.path.exists(ct_path):
-                    continue
-                result = self.predict_case(ct_path, bat_path, at_path, left_patch_path,
-                                           right_patch_path, left_label_path, right_label_path)
-
-                # self.visualize_results(
-                #     result,
-                #     save_path=os.path.join(case_dir, 'prediction_visualization.png')
-                # )
-                results.append({
-                    'case_id': os.path.basename(case_dir),
-                    'pred_prob': result['case_prob'],
-                    'pred_label': int(result['case_prob'] > 0.5),
-                    'max_patch_prob': np.max(result['patch_probs'])
-                })
-            except Exception as e:
-                print(f"Error processing {case_dir}: {str(e)}")
-
-        df = pd.DataFrame(results)
-        df.to_csv(output_csv, index=False)
 
 if __name__ == "__main__":
-    predictor = BATInference(
-        model_path='best_model.pth',
-        device='cuda' 
-    )
-    predictor.batch_predict(
-        data_dir='.BATNet/data/cls_data/train',
-        output_csv='prediction_results.csv'
-    )
+    nii_externa_testset_10()
+    infer_externa_testset_744()
+
+
+
+
+
