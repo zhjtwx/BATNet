@@ -2,18 +2,35 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import math
-# from einops import rearrange
 
 
 class ContralateralInteractionModule(nn.Module):
+    """
+    Cross-lateral interaction module designed to enhance bilateral feature
+    communication between left and right 3D feature maps.
 
+    Mechanism:
+        - Horizontally flip the right feature map to align anatomical sides.
+        - Concatenate the left and flipped-right features.
+        - Generate a key-value projection (via 1x1x1 conv).
+        - Compute attention maps for both sides to extract symmetrical relations.
+        - Enhance both left and right features using attention-guided fusion.
+        - Refine outputs with ECA (Efficient Channel Attention).
+    """
     def __init__(self, channels):
         super().__init__()
         self.eca = ECAModule(channels)
         self.kv_proj = nn.Conv3d(2*channels, channels, kernel_size=1)
 
     def forward(self, left_feat, right_feat):
-
+        """
+        Args:
+            left_feat:  [B, C, D, H, W] feature map from left input
+            right_feat: [B, C, D, H, W] feature map from right input
+        Returns:
+            enhanced_left, enhanced_right: contralaterally refined feature maps
+        """
+        # Flip right feature map along the width (left-right axis)
         right_flipped = torch.flip(right_feat, [-1])
         kv_feat = torch.cat([left_feat, right_flipped], dim=1)
         kv_feat = self.kv_proj(kv_feat)
@@ -40,7 +57,12 @@ class ContralateralInteractionModule(nn.Module):
 
 
 class ECAModule(nn.Module):
-
+    """
+    Efficient Channel Attention module:
+    - Avoids dimensionality reduction.
+    - Captures local cross-channel interaction using 1D convolution.
+    - Lightweight and effective for 3D feature recalibration.
+    """
     def __init__(self, channels, gamma=2, b=1):
         super().__init__()
         k_size = int(abs((math.log2(channels) + b) / gamma))
@@ -56,7 +78,10 @@ class ECAModule(nn.Module):
 
 
 class ResNet3DBlock(nn.Module):
-
+    """
+    Standard 3D ResNet block with two 3x3x3 convolutions and a skip connection.
+    Supports stride for downsampling.
+    """
     def __init__(self, in_channels, out_channels, stride=1):
         super().__init__()
         self.conv1 = nn.Conv3d(in_channels, out_channels, kernel_size=3, stride=stride, padding=1)
@@ -80,7 +105,11 @@ class ResNet3DBlock(nn.Module):
 
 
 class SharedResNet3D(nn.Module):
-
+    """
+    Shared 3D ResNet backbone used for both left and right lung patches.
+    Integrates Contralateral Interaction Modules (CIMs) to enhance
+    bilateral contextual learning at intermediate feature levels.
+    """
     def __init__(self):
         super().__init__()
         self.conv1 = nn.Conv3d(2, 64, kernel_size=7, stride=2, padding=3)
@@ -95,6 +124,12 @@ class SharedResNet3D(nn.Module):
         self.cim2 = ContralateralInteractionModule(256)
 
     def forward(self, x_left, x_right):
+        """
+        Args:
+            x_left, x_right: [B, 2, D, H, W] input volumes for left/right at
+        Returns:
+            left, right: deep feature maps after shared ResNet + bilateral enhancement
+        """
         left = F.relu(self.bn1(self.conv1(x_left)))
         right = F.relu(self.bn1(self.conv1(x_right)))
         left = self.maxpool(left)
@@ -115,6 +150,12 @@ class SharedResNet3D(nn.Module):
 
 
 class PatchLevelBATCls(nn.Module):
+    """
+    Patch-level bilateral attention transformer classifier.
+    Extracts 3D local patch features from left/right inputs,
+    enhances them through SharedResNet3D + CIMs,
+    and produces patch-wise classification logits.
+    """
     def __init__(self):
         super().__init__()
         self.shared_backbone = SharedResNet3D()
@@ -129,84 +170,98 @@ class PatchLevelBATCls(nn.Module):
 
 
     def forward(self, left_patch, right_patch):
-        B = left_patch.size(0)  # （B, 16, 2, 32, 32, 32)
-        input_left_patch = left_patch.view(-1, 2, 32, 32, 32)
-        input_right_patch = right_patch.view(-1, 2, 32, 32, 32)
+        """
+        Args:
+            left_patch, right_patch: [B, 16, 2, 32, 32, 32]
+        Returns:
+            patch_preds: [B*32, 2]  patch-level classification logits
+            patch_features: [B, 32, 256]  pooled 3D feature embeddings
+        """
+        B = left_patch.size(0)          # [B, 16, 2, 32, 32, 32]
+        P = left_patch.size(1)
 
-        left_feat, right_feat = self.shared_backbone(input_left_patch, input_right_patch) # （B*16, 256, 4, 4, 4)
-        combined_features = torch.cat([left_feat, right_feat], dim=0) # （B*32, 256, 4, 4, 4)
+        left_patch = left_patch.view(B * P, 2, 32, 32, 32)
+        right_patch = right_patch.view(B * P, 2, 32, 32, 32)
 
-        combined_features = self.global_pool(combined_features) # B*32, 256, 1, 1, 1)
-        out_feats =combined_features.view(B, 32, -1)
-        preds = self.classifier_head(combined_features.view(B*32, -1))
-        return preds, out_feats
+        left_feat, right_feat = self.shared_backbone(left_patch, right_patch)  # [B*P, 256, d, h, w]
+
+        # ensure contiguous (defensive)
+        if not left_feat.is_contiguous():
+            left_feat = left_feat.contiguous()
+        if not right_feat.is_contiguous():
+            right_feat = right_feat.contiguous()
+
+        # spatial dims
+        _, C, d, h, w = left_feat.shape  # C should be 256
+
+        # restore case & patch dims
+        left_feat = left_feat.view(B, P, C, d, h, w)
+        right_feat = right_feat.view(B, P, C, d, h, w)
+        combined = torch.cat([left_feat, right_feat], dim=1)  # [B, 32, 256, d, h, w]
+
+        pooled = self.global_pool(combined)   # [B, 32, 256, 1, 1, 1]
+        patch_features = pooled.view(B, 32, 256)
+
+        patch_preds = self.classifier_head(patch_features.view(B * 32, -1))  # [B*32, 2]
+
+        return patch_preds, patch_features
 
 
 class CaseLevelBATCls(nn.Module):
+    """
+    Case-level classifier that aggregates all patch embeddings
+    using a lightweight Transformer encoder.
 
+    Uses a [CLS] token to derive the holistic representation
+    for patient-level classification.
+    """
     def __init__(self, num_patches=32, embed_dim=256):
         super().__init__()
         self.cls_token = nn.Parameter(torch.randn(1, 1, embed_dim))
-        self.pos_embed = PositionalEncoding3D(embed_dim)
-        self.patch_proj = nn.Linear(256, embed_dim)
-
+        self.patch_proj = nn.Linear(embed_dim, embed_dim)
+        self.pos_embed = nn.Parameter(torch.randn(1, num_patches + 1, embed_dim) * 0.02)
         encoder_layer = nn.TransformerEncoderLayer(
-            d_model=embed_dim, nhead=8, dim_feedforward=1024, dropout=0.1)
-        self.transformer = nn.TransformerEncoder(encoder_layer, num_layers=6)
+            d_model=embed_dim, nhead=8, dim_feedforward=1024,
+            dropout=0.1, batch_first=True
+        )
+        self.transformer = nn.TransformerEncoder(encoder_layer, num_layers=2)
 
         self.classifier = nn.Sequential(
+            nn.LayerNorm(embed_dim),
             nn.Linear(embed_dim, 128),
-            nn.ReLU(),
-            nn.Linear(128, 1),
-            nn.Sigmoid()
+            nn.ReLU(inplace=True),
+            nn.Dropout(0.2),
+            nn.Linear(128, 2)
         )
 
     def forward(self, patch_features):
+        """
+        Args:
+            patch_features: [B, 32, 256]
+        Returns:
+            case-level prediction: [B, 2]
+        """
         # patch_features: [B, 32, 256]
-        batch_size = patch_features.size(0)
-        cls_tokens = self.cls_token.expand(batch_size, -1, -1)
-
-        x = self.patch_proj(patch_features)  # [B, 32, 256] -> [B, 32, embed_dim]
-        x = self.pos_embed(x)
-        x = torch.cat([cls_tokens, x], dim=1)  # [B, 33, embed_dim]
-
-        x = self.transformer(x)
-
-        cls_output = x[:, 0, :]
+        B = patch_features.shape[0]
+        x = self.patch_proj(patch_features)  # Feature embedding tighten
+        cls = self.cls_token.expand(B, -1, -1)
+        x = torch.cat((cls, x), dim=1)  # [B, 33, 256]
+        x = x + self.pos_embed[:, :x.size(1), :]
+        x = self.transformer(x)  # [B, 33, 256]
+        cls_output = x[:, 0]  # case-level embedding
         return self.classifier(cls_output)
 
 
-class PositionalEncoding3D(nn.Module):
-
-    def __init__(self, dim):
-        super().__init__()
-        self.dim = dim
-        self.div_term = torch.exp(torch.arange(0, dim, 2).float() * (-math.log(10000.0) / dim))
-
-    def forward(self, x):
-        # x: [B, 32, C]
-        B, N, C = x.shape
-        assert N == 32
-
-        pos = torch.zeros(1, 2, 2, 8, self.dim, device=x.device)
-
-        for z in range(2):
-            for y in range(2):
-                for x in range(4):
-                    pos[0, z, y, x, 0::2] = torch.sin((z * 16 + y * 8 + x) * self.div_term)
-                    pos[0, z, y, x, 1::2] = torch.cos((z * 16 + y * 8 + x) * self.div_term)
-        for z in range(2):
-            for y in range(2):
-                for x in range(7, 3, -1):
-                    pos[0, z, y, x, 0::2] = torch.sin((z * 16 + y * 8 + x) * self.div_term)
-                    pos[0, z, y, x, 1::2] = torch.cos((z * 16 + y * 8 + x) * self.div_term)
-
-        pos = pos.view(1, -1, self.dim).expand(B, -1, -1)
-        return x + pos
-
-
 class CEBATCls(nn.Module):
+    """
+    Cascade Enhanced Bilateral Attention Transformer Classifier (CE-BATCls).
 
+    Architecture:
+        1. Patch-level bilateral attention model extracts localized features.
+        2. Case-level transformer aggregates patch embeddings for global decision.
+
+    Returns both case-level and patch-level predictions.
+    """
     def __init__(self):
         super().__init__()
         self.patch_model = PatchLevelBATCls()
@@ -217,4 +272,3 @@ class CEBATCls(nn.Module):
         patch_preds, patch_features = self.patch_model(left_patches, right_patches)
         case_pred = self.case_model(patch_features)
         return case_pred, patch_preds
-
