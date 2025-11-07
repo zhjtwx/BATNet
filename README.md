@@ -67,7 +67,7 @@ Some packages like pycuda and mmcv-full require compatible system environments. 
 
 ### Inference Example
 
-#### Fat segmentation model inference example for the whole case
+#### At segmentation model inference example for the whole case
 ```python
 import sys
 sys.path.append('./MG_ATSeg')
@@ -92,19 +92,13 @@ predictor = BATInference(
         device='cuda'  # or 'cpu'
     )
 # Run classification
-predictor.batch_predict(
-        data_dir='./data/cls_data/train/case_*',
-        output_csv='prediction_results.csv'
-    )
+out_pres = predictor.batch_predict(
+            data_dir='./data/nii_10/case_*'
+          )  
 
-# Batch input is possible. The input format is described in "data-preparation". A csv file is output, which records "patient ID", "case-level predicted brown fat probability", "case-level predicted brown fat label", and "patch-level maximum predicted probability". The table format is as follows
+# Batch input is supported. See the "Data Preparation" section for input format details. The output shows the predicted probability of brown adipose tissue for each case.
 ```
 
-#### prediction_results.csv
-| case_id | pred_prob | pred_label | max_patch_prob |
-|-----------|--------------|-------------|-------------|
-| case0 |   0.12653 | 0 | 0.2178 |
-| ... | ... | ... | ... |
 
 #### Model inference time
 On an NVIDIA TITAN XP GPU, BATNet processes standard chest CT scans (512×512×300 slices) in 15-30 seconds per case end-to-end, with peak VRAM usage of 10.5GB. The pipeline comprises: (1) 10-second preprocessing (HU normalization/resampling), (2) 3-6 seconds/slice adipose tissue segmentation using the Mirror Attention U-Net, and (3) 2-5 seconds contralateral patch analysis via the ResNet-Transformer classifier. Continuous processing achieves 2-3 cases/minute throughput. Demo executions on the provided 8-case sample dataset complete in 2-4 minutes, with variations depending on slice count (see Sample Data). 
@@ -129,9 +123,10 @@ data/
 └──cls_data/ # Data for CE_BATCIs
      ├── train/
      │   ├── case_001/
-     │   │   ├── image.nii.gz  # The entire CT is saved in nii format. This path must exist. Input for MG_ATSeg model inference.
+     │   │   ├── image.nii.gz  # The entire CT is saved in nii format. This path must exist. Input for MG_ATSeg model inference. Each volume has dimensions of (Z, X, Y), aligned along the Z-axis from top to bottom.
      │   │   ├── fat_mask.nii.gz  # Fat mask. If this path is missing, the MG_ATSeg fat segmentation model will be automatically called for fat segmentation.
      │   │   ├── brown_fat_mask.nii.gz # Brown fat mask, manually marked with software, if empty, the default brown fat mask mark value is all 0
+     │   │   ├── lobe.nii.gz # This path contains the lung segmentation mask corresponding to the CT scan, the purpose of which is to extract fat above the armpit and remove fat below the armpit.
      │   │   ├── ct_at_left_label.nii.gz # Labels for left patches, You can call "pro_at_patch.py" to generate it offline, or you can generate it directly in the training model.
      │   │   ├── ct_at_right_label.nii.gz # Labels for right patches, You can call "pro_at_patch.py" to generate it offline, or you can generate it directly in the training model.
      │   │   ├── ct_at_left_patch.nii.gz # left patches, You can call "pro_at_patch.py" to generate it offline, or you can generate it directly in the training model.
