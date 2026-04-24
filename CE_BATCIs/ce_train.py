@@ -120,8 +120,9 @@ class Trainer:
 
 if __name__ == "__main__":
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    df = pd.read_csv('./data/crop_744/info.csv')
-    case_dirs = df['case_id'].tolist()
+    # df = pd.read_csv('./data/crop_744/info.csv')
+    # case_dirs = df['case_id'].tolist()
+    case_dirs = glob.glob('./data/cls_data/train/*')
     train_dataset = BATDataset(
         root_paths=case_dirs,
         patch_size=32,
