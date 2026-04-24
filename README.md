@@ -42,10 +42,10 @@ git clone --recurse-submodules https://github.com/zhjtwx/BATNet.git
 cd BATNet
 # Install core packages
 1.Create Conda Environment
-conda create -n batnet_py38 python=3.8 -y
-conda activate batnet_py38
+conda create -n batnet python=3.8 -y
+conda activate batnet
 
-2.Install PyTorch with CUDA 12.1
+2.Install PyTorch with CUDA 12.4
 pip install torch==2.4.1 torchvision==0.19.1 torchaudio==2.4.1
 
 3.Install Other
@@ -56,48 +56,52 @@ The installation typically takes:
 - **15-25 minutes** on a normal desktop with good internet connection
 - May extend to **30-45 minutes** if compilation is required for your specific system
 
-### Notes
-Some packages like pycuda and mmcv-full require compatible system environments. GPU-related packages will auto-detect CUDA 10.1 by default. If interrupted, you can resume installation with --ignore-installed flag
-
 ## Quick Start
 
 ### Inference Example
 
-#### At segmentation model inference example for the whole case
-```python
-import sys
-sys.path.append('./MG_ATSeg')
-from patient_fat_inf import InfATMask
-# Initialize 
-at_seg_model = InfATMask(model_file="mg_stseg.pth", # MG_ATSEG training saved model
-                            device_ids=[1,2] 
-                            )
-# Run seg
-# The input is the entire DICOM saved nii format data，The output is the fat segmentation mask corresponding to the entire nii
-at_seg_mask = seg_at_model.inf_case_at(ct_nii_path='./data/cls_data/train/case_001/image.nii.gz') 
 ```
-
-#### Classification of BAT
-```python
-import sys
-sys.path.append('./CE_BATCIs')
-from ce_infer import InfATMask
-# Initialize 
-predictor = BATInference(
-        model_path='ce_batcis.pth', # CE_BATCIs training saved model
-        device='cuda'  # or 'cpu'
-    )
-# Run classification
-out_pres = predictor.batch_predict(
-            data_dir='./data/nii_10/case_*'
-          )  
-
-# Batch input is supported. See the "Data Preparation" section for input format details. The output shows the predicted probability of brown adipose tissue for each case.
+python bat_inf.py --input data/crop_744/info.csv --output crop_744_inf.csv
+python bat_inf.py --input data/nii_10 --output nii_10_inf.csv
 ```
+    --input
+    Supported input formats:
 
+    1. CSV file
+       - Must contain a 'case_id' column, The case_id stores the input path for each case.
 
-#### Model inference time
-On an NVIDIA TITAN XP GPU, BATNet processes standard chest CT scans (512×512×300 slices) in 15-30 seconds per case end-to-end, with peak VRAM usage of 10.5GB. The pipeline comprises: (1) 10-second preprocessing (HU normalization/resampling), (2) 3-6 seconds/slice adipose tissue segmentation using the Mirror Attention U-Net, and (3) 2-5 seconds contralateral patch analysis via the ResNet-Transformer classifier. Continuous processing achieves 2-3 cases/minute throughput. Demo executions on the provided 8-case sample dataset complete in 2-4 minutes, with variations depending on slice count (see Sample Data). 
+    2. Single root directory
+       - Recursively scans all valid case folders.
+
+    3. Multiple case directories
+       - Filters and keeps only valid cases.
+
+    A valid case directory must satisfy one of the following:
+
+    A. Contains both:
+       - image.nii.gz # Original image
+       - lobe.nii.gz # lung mask segmented from the original image.
+
+    B. Contains both:
+       - ct_at_left_patch.nii.gz # Patches on the left side, cropped from the original image based on the at region.
+       - ct_at_right_patch.nii.gz # Patches on the right side, cropped from the original image based on the at region.
+ 
+
+    --output: CSV file for saving results
+      output result: The contents of the CSV file are as follows.
+
+| case_id | prediction |
+|-----------|--------------|
+| input case id | Predicted probability of BAT|
+
+    If the input case is as follows, both the fat segmentation model and the brown fat classification model will be run simultaneously. In addition to outputting the above table, the segmented fat will also be saved in the same path as the original image.
+       - image.nii.gz # Original image
+       - lobe.nii.gz # lung mask segmented from the original image.
+
+    If the input case is as follows, only the brown fat classification model will be run.
+       - ct_at_left_patch.nii.gz # Patches on the left side, cropped from the original image based on the at region.
+       - ct_at_right_patch.nii.gz # Patches on the right side, cropped from the original image based on the at region.
+
 
 ## Data Preparation
 ### Directory Structure
@@ -140,7 +144,13 @@ processor = SymmetricalATProcessor(
     model_file="mg_stseg.pth"  #seg_model_file,Can be None, but when None, there must be a fat_mask.nii.gz file
 )
 # Run 
-ct_at_left, ct_at_right, left_label, right_label = processor.process(image_file, fat_file, bat_file)
+ct_at_left, ct_at_right, left_label, right_label = processor.process(image_file, fat_file, bat_file, lung_file)
+"""
+image_file: Path of the original image (in nii.gz format)；
+fat_file: Path of the fat mask (in nii.gz format), can be None. When it is None, the fat segmentation model (MG_BATCIs) will be invoked to obtain the fat mask.
+bat_file: Path of the bat mask (in nii.gz format), derived from manually annotated brown adipose tissue.
+lung_file: Path of the lung mask (in nii.gz format), Lung mask segmentation derived from TotalSegmentator.
+"""
 ```
 ## model-architecture
 ### MG-ATSeg Components
@@ -170,7 +180,23 @@ python CE-BATCls/ce_train.py # Please modify the corresponding hyperparameters i
 ```
 
 ## Sample Data
-We uploaded 8 chest CT images from the dataset for demonstration (3 for fat segmentation and 5 for brown fat classification). Please download the data at the following link (https://zenodo.org/records/15524145/files/data.zip?download=1). After downloading the data, please unzip the data under BATNet. Its distribution can be viewed in the directory structure section. Please note that the sample data is provided only to allow users to verify the workflow of the provided code. Since model weights are a key component of the BATNet model, which needs to be applied to business in the future, we cannot disclose the specific values ​​of model weights at present. Users can train the model with their own datasets to obtain their own model weights.
 
-## Reproduction Instructions
-To demonstrate the workflow using the provided 8 sample cases download the data from Zenodo and run the demo, which will complete in approximately 10-20 minutes on an NVIDIA TITAN XP GPU. Please note this simplified demo uses processed intermediate outputs to verify the pipeline architecture, while the full research implementation requires training with larger datasets. Due to ongoing clinical deployment preparations, the complete model weights and full training data are not currently available for public release. Researchers are encouraged to train the model using their own datasets following our architecture specifications, and may contact the authors for potential collaboration opportunities to access extended validation datasets.
+Verification of the training process: We have uploaded 8 chest CT images from the dataset as a demonstration for training (3 for fat segmentation and 5 for brown fat classification). Please download the data from the following link: https://zenodo.org/records/15524145/files/data.zip?download=1. After downloading, please unzip the data into the BATNet directory. The directory structure of the data can be found in the "Directory Structure" section. Once downloaded, simply run "MG-ATSeg Training" and "CE-BATCls Training" to train the respective models.
+
+## Inference validation
+### Model Weights 
+The model weights can be downloaded from Zenodo: 
+https://zenodo.org/records/17540420/files/model_weights.zip?download=1; Password: batnet
+Note: After downloading, please extract the contents to the root directory of the BATNet project.
+Password: batnet
+
+### Validation dataset
+To support comprehensive validation, we provided adipose tissue segmentation patches extracted from the holdout set (n = 744), which were used for evaluating the classification module. We also provided 10 complete CT scans (.nii format) selected from the holdout set, enabling end-to-end validation of the entire pipeline, including both adipose segmentation and whole-slice BAT classification.
+
+The adipose tissue segmentation patches (n = 744) and complete CT scans (n = 10) can be downloaded from Zenodo:
+https://zenodo.org/records/17541503/files/data.zip?download=1; Password: batnet
+
+### infer test
+Once both the model and data are in place, users can run the inference script directly via:
+1. python CE_BATCIs/ce_infer.py
+2. Follow the inference procedure described in the Inference Example section.
