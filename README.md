@@ -30,11 +30,10 @@
 ## Installation
 
 ### Prerequisites
-- Ubuntu 16.04.4 LTS
-- Python 3.6.13
-- Pytorch 1.10.0+cu113
-- NVIDIA GPU + CUDA_10.1 CuDNN_8.2
-This repository has been tested on NVIDIA TITANXP. Configurations (e.g batch size, image patch size) may need to be changed on different platforms.
+- Ubuntu 24.04.2 LTS
+- Python 3.8.2
+- Pytorch 2.4.1+cu121
+This repository has been tested on Tesla V100-SXM2-32GB. Configurations (e.g batch size, image patch size) may need to be changed on different platforms.
 
 ### Setup
 ```bash
@@ -43,16 +42,13 @@ git clone --recurse-submodules https://github.com/zhjtwx/BATNet.git
 cd BATNet
 # Install core packages
 1.Create Conda Environment
-conda create -n batnet python=3.6.13 -y
-conda activate batnet
-2.Upgrade Pip and Install System Dependencies
-pip install --upgrade pip
-apt update && apt install -y libxml2 libgl1-mesa-glx  # Essential libraries
-3.Install CUDA Toolkit
-conda install -c conda-forge cudatoolkit=11.3 -y  # Use conda-forge for better compatibility
-4.Install PyTorch with CUDA 11.3
-pip install torch==1.10.0+cu113 torchvision==0.11.0+cu113 -f https://download.pytorch.org/whl/torch_stable.html
-5.Install Other
+conda create -n batnet_py38 python=3.8 -y
+conda activate batnet_py38
+
+2.Install PyTorch with CUDA 12.1
+pip install torch==2.4.1 torchvision==0.19.1 torchaudio==2.4.1
+
+3.Install Other
 pip install -r requirements.txt
 ```
 ### Expected Install Time
