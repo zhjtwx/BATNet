@@ -215,6 +215,6 @@ docker run --gpus all -it --rm \
   --shm-size=16g \
   -e OPENBLAS_NUM_THREADS=1 \
   batnet-image:v2 /bin/bash  # Verify successful image import and launch the container
-'''
-### Note! We recommend using Ubuntu 22.04 or later for optimal compatibility and performance.
+
+#### Note! We recommend using Ubuntu 22.04 or later for optimal compatibility and performance.
    
