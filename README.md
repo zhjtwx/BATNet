@@ -176,7 +176,7 @@ python MG_ATSeg/train.py # Please modify the corresponding hyperparameters in tr
 ### CE-BATCls Training
 ```bash
 cd BATNet
-python CE-BATCls/ce_train.py # Please modify the corresponding hyperparameters in ce_train.py
+python CE_BATCIs/ce_train.py # Please modify the corresponding hyperparameters in ce_train.py
 ```
 
 ## Sample Data
