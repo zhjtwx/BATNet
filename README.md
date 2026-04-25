@@ -10,7 +10,8 @@
 5. [Model Architecture](#model-architecture)
 6. [Training](#training)
 7. [Sample Data](#Sample-Data)
-8. [Reproduction Instructions](#Reproduction-Instructions)
+8. [Inference validation](#Inference-validation)
+9. [Docker Environment for Quick Validation](#Docker-Environment-for-Quic-Validation)
 
 ## Key Features
 
@@ -200,3 +201,20 @@ https://zenodo.org/records/17541503/files/data.zip?download=1; Password: batnet
 Once both the model and data are in place, users can run the inference script directly via:
 1. python CE_BATCIs/ce_infer.py
 2. Follow the inference procedure described in the Inference Example section.
+## Docker Environment for Quick Validation
+To facilitate quick validation and testing, we provide a pre-configured Docker environment. This package contains a fully set-up runtime environment, along with code, datasets, and pre-trained model weights. 
+### Download Link
+[****] (Replace with your actual download URL)
+### Quick Start
+'''bash
+docker load -i batnet-image-v2.tar.gz # Load the Docker image after downloading
+docker run --gpus all -it --rm \
+  --runtime=nvidia \
+  --privileged \
+  --security-opt seccomp=unconfined \
+  --shm-size=16g \
+  -e OPENBLAS_NUM_THREADS=1 \
+  batnet-image:v2 /bin/bash  # Verify successful image import and launch the container
+'''
+### Note! We recommend using Ubuntu 22.04 or later for optimal compatibility and performance.
+   
