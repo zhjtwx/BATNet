@@ -201,12 +201,13 @@ https://zenodo.org/records/17541503/files/data.zip?download=1; Password: batnet
 Once both the model and data are in place, users can run the inference script directly via:
 1. python CE_BATCIs/ce_infer.py
 2. Follow the inference procedure described in the Inference Example section.
+
 ## Docker Environment for Quick Validation
 To facilitate quick validation and testing, we provide a pre-configured Docker environment. This package contains a fully set-up runtime environment, along with code, datasets, and pre-trained model weights. 
 ### Download Link
 [****] (Replace with your actual download URL)
 ### Quick Start
-'''bash
+```bash
 docker load -i batnet-image-v2.tar.gz # Load the Docker image after downloading
 docker run --gpus all -it --rm \
   --runtime=nvidia \
