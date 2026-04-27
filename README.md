@@ -205,7 +205,7 @@ Once both the model and data are in place, users can run the inference script di
 ## Docker Environment for Quick Validation
 To facilitate quick validation and testing, we provide a pre-configured Docker environment. This package contains a fully set-up runtime environment, along with code, datasets, and pre-trained model weights. 
 ### Download Link
-[https://zenodo.org/api/records/19756491/files-archive] 
+[https://zenodo.org/records/19756491/files/batnet-image-v2.tar.gz?download=1] 
 ### Quick Start
 ```bash
 docker load -i batnet-image-v2.tar.gz # Load the Docker image after downloading
