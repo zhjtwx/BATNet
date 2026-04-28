@@ -85,23 +85,18 @@ The installation typically takes:
 
 ### Docker Environment
 To facilitate rapid validation and reproducibility, we provide a fully pre-configured Docker environment. The Docker package includes:
+-**Complete runtime dependencies**
+-**BAT-Net source code**
+-**Example datasets**
+-**model weights**
 
--- Complete runtime dependencies
-BAT-Net source code
-Example datasets
-Pretrained model weights
-### Download Link
-[https://zenodo.org/records/19756491/files/batnet-image-v2.tar.gz?download=1] 
-### Quick Start
+#### Download Link
+The Docker image can be downloaded from:[https://zenodo.org/records/19756491/files/batnet-image-v2.tar.gz?download=1] 
+#### Quick Start
+After downloading the archive, navigate to the directory containing the file and execute the following commands to load the Docker image and launch the BAT-Net runtime environment:
 ```bash
-docker load -i batnet-image-v2.tar.gz # Load the Docker image after downloading
-docker run --gpus all -it --rm \
-  --runtime=nvidia \
-  --privileged \
-  --security-opt seccomp=unconfined \
-  --shm-size=16g \
-  -e OPENBLAS_NUM_THREADS=1 \
-  batnet-image:v2 /bin/bash  # Verify successful image import and launch the container
+docker load -i batnet-image-v3.tar.gz # Load the Docker image after downloading
+docker run --gpus all -it --rm --runtime=nvidia --shm-size=16g batnet-image:v3 /bin/bash
 ```
 #### Note! We recommend using Ubuntu 22.04 or later for optimal compatibility and performance.
 
