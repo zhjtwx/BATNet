@@ -231,13 +231,13 @@ processor = SymmetricalATProcessor(
 
 # Generate bilateral adipose patches
 ct_at_left_patch, ct_at_right_patch, _, _ = processor.process(
-    image_file,
-    fat_file,
+    image_file, # ‘./data/nii_10/case_20591/image.nii.gz’
+    fat_file, # ‘./data/nii_10/case_20591/seg_at_mask.nii.gz’
     None,
-    lung_file
+    lung_file # ‘./data/nii_10/case_20591/lobe.nii.gz’
 )
-save_nii(ct_at_left_patch, './data/nii_test/case_0001/ct_at_left_patch.nii.gz')
-save_nii(ct_at_right_patch, './data/nii_test/case_0001/ct_at_right_patch.nii.gz')
+save_nii(ct_at_left_patch, './data/nii_test/case_20591/ct_at_left_patch.nii.gz')
+save_nii(ct_at_right_patch, './data/nii_test/case_20591/ct_at_right_patch.nii.gz')
 ```
 ##### Parameter Description
 - image_file: Path to the original CT image (image.nii.gz).
