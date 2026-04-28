@@ -1,5 +1,11 @@
 # BATNet: Symmetry-Aware Deep Learning for Brown Adipose Tissue Detection
 
+BATNet is a cascaded deep learning framework for **brown adipose tissue (BAT)** detection from chest CT. It consists of:
+
+- **MG-ATSeg**: multi-slice adipose tissue segmentation with a mirror-attention (symmetry-aware) U-Net.
+- **CE-BATCls**: contralateral interaction + transformer aggregation for case-level BAT classification.
+
+
 ![BATNet Workflow](model.png) For details of the model structure, please refer to the paper
 
 ## Table of Contents
@@ -34,7 +40,7 @@ To improve compatibility, security, and long-term maintainability, we have upgra
 |-----------|--------------|--------------|
 | Operating System| Ubuntu 16.04.4 LTS| Ubuntu 22.04.2 LTS|
 | Python | Python 3.6.13| Python 3.11|
-| PyTorch | Pytorch 1.10.0+cu113| PyTorch 2.4.1 + CUDA 12.1|
+| PyTorch | Pytorch 1.10.0+cu113| PyTorch: 2.4.1+cu121|
 | Status| Fully Supported| Fully Supported|
 | Test AUC (744 cases) | 0.896| 0.896|
 
@@ -49,14 +55,12 @@ Both the original and updated environments have been extensively validated. On t
 git clone --recurse-submodules https://github.com/zhjtwx/BATNet.git
 cd BATNet
 # Install core packages
-1.Create Conda Environment
+# 1.Create Conda Environment
 conda create -n batnet python=3.11 -y
 conda activate batnet
-
-2.Install PyTorch with CUDA 12.4
+# 2.Install PyTorch with CUDA 12.1
 pip install torch==2.4.1 torchvision==0.19.1 torchaudio==2.4.1
-
-3.Install Other
+# 3.Install Other
 pip install -r requirements.txt
 ```
 #### Original Environment
@@ -65,14 +69,12 @@ pip install -r requirements.txt
 git clone --recurse-submodules https://github.com/zhjtwx/BATNet.git
 cd BATNet
 # Install core packages
-1.Create Conda Environment
+# 1.Create Conda Environment
 conda create -n batnet python=3.6.13 -y
 conda activate batnet
-
-2.Install PyTorch with CUDA 11.3
+# 2.Install PyTorch with CUDA 11.3
 pip install torch==1.10.0+cu113 torchvision==0.11.0+cu113 -f https://download.pytorch.org/whl/torch_stable.html
-
-3.Install Other
+# 3.Install Other
 pip install -r requirements_old.txt
 ```
 #### Expected Install Time
@@ -88,13 +90,29 @@ To facilitate rapid validation and reproducibility, we provide a fully pre-confi
 - **model weights**
 
 #### Download Link
-The Docker image can be downloaded from:[https://zenodo.org/records/19756491/files/batnet-image-v2.tar.gz?download=1] 
+The Docker image can be downloaded from:[https://zenodo.org/records/19756491/files/batnet-image-v3.tar.gz?download=1] 
 #### Quick Start
 After downloading the archive, navigate to the directory containing the file and execute the following commands to load the Docker image and launch the BATNet runtime environment:
 ```bash
 docker load -i batnet-image-v3.tar.gz # Load the Docker image after downloading
 docker run --gpus all -it --rm --runtime=nvidia --shm-size=16g batnet-image:v3 /bin/bash
 ```
+#### After Launching the Container
+Once the container starts, you will automatically enter the BAT-Net project directory:
+```bash
+root@container:/BATNet#
+```
+You can then directly follow the inference and training instructions provided below.
+The Docker image already includes:
+- Model weights for both MG-ATSeg and CE-BATCls
+- Two inference demonstration datasets:
+  - data/nii_10
+  - data/crop_744
+- A lightweight training demonstration dataset
+  - data/seg_data
+  - data/cls_data
+
+This means no additional downloads or configuration are required—everything is ready to use immediately after launching the container.
 #### Note! We recommend using Ubuntu 22.04 or later for optimal compatibility and performance.
 
 ## Inference
@@ -437,8 +455,8 @@ ct_at_left_label, ct_at_right_label = processor.process(
 # Save outputs
 nib.save(nib.Nifti1Image(ct_at_left_patch, np.eye(4)), './data/cls_data/case_001/ct_at_left_patch.nii.gz')
 nib.save(nib.Nifti1Image(ct_at_right_patch, np.eye(4)),  './data/cls_data/case_001/ct_at_right_patch.nii.gz')
-nib.save(nib.Nifti1Image(ct_at_left_label, np.eye(4)), './data/cls_data/case_001/ct_at_left_label.nii.gz')
-nib.save(nib.Nifti1Image(ct_at_right_label, np.eye(4)), './data/cls_data/case_001/ct_at_right_label.nii.gz')
+nib.save(nib.Nifti1Image(ct_at_left_label.astype(np.uint8), np.eye(4)), './data/cls_data/case_001/ct_at_left_label.nii.gz')
+nib.save(nib.Nifti1Image(ct_at_right_label.astype(np.uint8), np.eye(4)), './data/cls_data/case_001/ct_at_right_label.nii.gz')
 
 ```
 ###### Generated Files
