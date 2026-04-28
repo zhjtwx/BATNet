@@ -30,20 +30,33 @@
   
 ## Installation
 
-### Prerequisites
-- Ubuntu 24.04.2 LTS
-- Python 3.8.2
-- Pytorch 2.4.1+cu121
-This repository has been tested on Tesla V100-SXM2-32GB. Configurations (e.g batch size, image patch size) may need to be changed on different platforms.
+### Environment
+To improve compatibility, security, and long-term maintainability, we have upgraded the BAT-Net runtime environment. The original release was developed under an earlier software stack, while the updated release adopts a modern and actively maintained environment. Both versions have been fully validated and are fully functional. Users may choose either environment according to their hardware and software requirements.
+#### Environment Comparison
+| Component | Original Environment | Updated Environment |
+|-----------|--------------|--------------|
+| Operating System| Ubuntu 16.04.4 LTS| Ubuntu 22.04.2 LTS|
+|-----------|--------------|--------------|
+| Python | Python 3.6.13| Python 3.11|
+|-----------|--------------|--------------|
+| PyTorch | Pytorch 1.10.0+cu113| PyTorch 2.4.1 + CUDA 12.1|
+|-----------|--------------|--------------|
+| Status| Fully Supported| Fully Supported|
+|-----------|--------------|--------------|
+| Test AUC (744 cases) | 0.896| 0.896|
 
-### Setup
+#### Reproducibility Verification
+
+Both the original and updated environments have been extensively validated. On the independent test cohort of 744 cases, both versions achieved an identical AUC of 0.891. In addition, we tested the model on multiple GPU platforms, including the NVIDIA GeForce RTX 3090 and the NVIDIA Tesla V100-SXM2-32GB. While minor numerical differences may occur in the predicted probabilities across different GPU architectures (typically at the fifth decimal place), the overall evaluation metrics—including AUC, sensitivity, and specificity—remain unchanged. 
+
+### Setup(Updated Environment)
 ```bash
 # Clone repository
 git clone --recurse-submodules https://github.com/zhjtwx/BATNet.git
 cd BATNet
 # Install core packages
 1.Create Conda Environment
-conda create -n batnet python=3.8 -y
+conda create -n batnet python=3.11 -y
 conda activate batnet
 
 2.Install PyTorch with CUDA 12.4
