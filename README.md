@@ -36,20 +36,16 @@ To improve compatibility, security, and long-term maintainability, we have upgra
 | Component | Original Environment | Updated Environment |
 |-----------|--------------|--------------|
 | Operating System| Ubuntu 16.04.4 LTS| Ubuntu 22.04.2 LTS|
-|-----------|--------------|--------------|
 | Python | Python 3.6.13| Python 3.11|
-|-----------|--------------|--------------|
 | PyTorch | Pytorch 1.10.0+cu113| PyTorch 2.4.1 + CUDA 12.1|
-|-----------|--------------|--------------|
 | Status| Fully Supported| Fully Supported|
-|-----------|--------------|--------------|
 | Test AUC (744 cases) | 0.896| 0.896|
 
 #### Reproducibility Verification
 
 Both the original and updated environments have been extensively validated. On the independent test cohort of 744 cases, both versions achieved an identical AUC of 0.891. In addition, we tested the model on multiple GPU platforms, including the NVIDIA GeForce RTX 3090 and the NVIDIA Tesla V100-SXM2-32GB. While minor numerical differences may occur in the predicted probabilities across different GPU architectures (typically at the fifth decimal place), the overall evaluation metrics—including AUC, sensitivity, and specificity—remain unchanged. 
 
-### Setup
+### Environmental installation 
 #### Updated Environment
 ```bash
 # Clone repository
@@ -65,6 +61,22 @@ pip install torch==2.4.1 torchvision==0.19.1 torchaudio==2.4.1
 
 3.Install Other
 pip install -r requirements.txt
+```
+#### Original Environment
+```bash
+# Clone repository
+git clone --recurse-submodules https://github.com/zhjtwx/BATNet.git
+cd BATNet
+# Install core packages
+1.Create Conda Environment
+conda create -n batnet python=3.6.13 -y
+conda activate batnet
+
+2.Install PyTorch with CUDA 11.3
+pip install torch==1.10.0+cu113 torchvision==0.11.0+cu113 -f https://download.pytorch.org/whl/torch_stable.html
+
+3.Install Other
+pip install -r requirements_old.txt
 ```
 ### Expected Install Time
 The installation typically takes:
