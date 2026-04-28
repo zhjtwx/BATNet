@@ -184,7 +184,7 @@ BATNet provides flexible input handling through the --input argument, allowing u
   Users may also specify multiple case directories directly.
   ``` bash
   python bat_inf.py \
-    --input data/nii_10/case_0001 data/nii_10/case_0002 \
+    --input data/nii_10/case_20565 data/nii_10/case_20591 \
     --output selected_cases_inf.csv
    ```
   Only valid case directories will be processed.
