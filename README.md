@@ -232,13 +232,36 @@ processor = SymmetricalATProcessor(
 # Generate bilateral adipose patches
 ct_at_left_patch, ct_at_right_patch, _, _ = processor.process(
     image_file,
+    fat_file,
     None,
-    bat_file,
     lung_file
 )
+save_nii(ct_at_left_patch, './data/nii_test/case_0001/ct_at_left_patch.nii.gz')
+save_nii(ct_at_right_patch, './data/nii_test/case_0001/ct_at_right_patch.nii.gz')
 ```
+##### Parameter Description
+- image_file: Path to the original CT image (image.nii.gz).
+- fat_file: Path to the adipose tissue mask (seg_at_mask.nii.gz).
+- lung_file: Path to the lung mask (lobe.nii.gz). Manual annotation, or Automatic prediction using an adipose tissue segmentation model.
+
+##### Generated Output
+
+After patch extraction, the generated bilateral adipose patches can be saved using the save_nii() function in the following format:
+``` bash
+case_xxxx/
+├── ct_at_left_patch.nii.gz
+└── ct_at_right_patch.nii.gz
+```
+These files can then be directly used as input for BAT-Net classification.
+#### Important Note
+All mask files must be stored as binary masks:
+- 1 indicates foreground.
+- 0 indicates background.
+This applies to: lobe.nii.gz and seg_at_mask.nii.gz
+
 
 The --input argument supports a CSV file, a root directory, or multiple case directories. BAT-Net will automatically identify all valid cases and perform inference. The --output argument specifies the CSV file used to save prediction results.
+
 
     --input
     Supported input formats:
