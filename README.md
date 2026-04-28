@@ -103,6 +103,22 @@ docker run --gpus all -it --rm --runtime=nvidia --shm-size=16g batnet-image:v3 /
 ## Inference
 BAT-Net is a cascaded deep learning framework consisting of two sequential modules: an adipose tissue segmentation model and a brown adipose tissue (BAT) classification model. In this updated release, we have added a new unified inference script, bat_inf.py, which provides a streamlined and flexible interface for model deployment. The script supports multiple input formats and automatically selects the appropriate inference pipeline based on the provided data, making BAT-Net significantly easier to use for both end-to-end prediction and rapid evaluation of preprocessed cases.
 
+### Model Weights 
+The model weights can be downloaded from Zenodo: 
+https://zenodo.org/records/17540420/files/model_weights.zip?download=1; Password: batnet
+Note: After downloading, please extract the contents to the root directory of the BATNet project.
+Password: batnet
+The directory structure should look like this:
+```bash
+BATNet/
+├── model_weights/
+│   ├── ce_batcis_model.pth
+│   ├── mg_atseg_model.pth
+│   └── ...
+├── bat_inf.py
+├── pro_at_patch.py
+└── ...
+```
 ### Validation Datasets
 We provide two complementary validation datasets:
 #### Adipose Patch Dataset (n = 744)
@@ -114,27 +130,32 @@ The validation dataset can be downloaded from Zenodo: https://zenodo.org/records
 ##### Password: batnet
 After downloading and extracting the archive, place the data directory in the BAT-Net project root.
 #### Directory Structure of Validation Datasets
-```ba sh
-data/
-├── crop_744/
-│   ├── info.csv
-│   ├── case_0001/
-│   │   ├── ct_at_left_patch.nii.gz
-│   │   └── ct_at_right_patch.nii.gz
-│   ├── case_0002/
-│   │   ├── ct_at_left_patch.nii.gz
-│   │   └── ct_at_right_patch.nii.gz
-│   └── ...
-│
-└── nii_10/
-    ├── info.csv
-    ├── case_0001/
-    │   ├── image.nii.gz
-    │   └── lobe.nii.gz
-    ├── case_0002/
-    │   ├── image.nii.gz
-    │   └── lobe.nii.gz
-    └── ...
+```bash
+BATNet/
+├── data/
+│     ├── crop_744/
+│     │   ├── info.csv
+│     │   ├── case_0001/
+│     │   │   ├── ct_at_left_patch.nii.gz
+│     │   │   └── ct_at_right_patch.nii.gz
+│     │   ├── case_0002/
+│     │   │   ├── ct_at_left_patch.nii.gz
+│     │   │   └── ct_at_right_patch.nii.gz
+│     │   └── ...
+│     │
+│     └── nii_10/
+│         ├── info.csv
+│         ├── case_0001/
+│         │   ├── image.nii.gz
+│         │   └── lobe.nii.gz
+│         ├── case_0002/
+│         │   ├── image.nii.gz
+│         │   └── lobe.nii.gz
+│         └── ...
+├── bat_inf.py
+├── pro_at_patch.py
+└── ...
+
 ```
 ### Usage Examples
 ```bash
