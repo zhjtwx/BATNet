@@ -246,7 +246,7 @@ from pro_at_patch import SymmetricalATProcessor, save_nii
 
 # Initialize processor
 processor = SymmetricalATProcessor(
-    model_file="mg_stseg.pth"  # Optional
+    model_file="./model_weights/mg_atseg_model.pth"
 )
 
 # Generate bilateral adipose patches
