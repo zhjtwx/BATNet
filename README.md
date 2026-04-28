@@ -83,6 +83,28 @@ The installation typically takes:
 - **15-25 minutes** on a normal desktop with good internet connection
 - May extend to **30-45 minutes** if compilation is required for your specific system
 
+### Docker Environment
+To facilitate rapid validation and reproducibility, we provide a fully pre-configured Docker environment. The Docker package includes:
+
+-- Complete runtime dependencies
+BAT-Net source code
+Example datasets
+Pretrained model weights
+### Download Link
+[https://zenodo.org/records/19756491/files/batnet-image-v2.tar.gz?download=1] 
+### Quick Start
+```bash
+docker load -i batnet-image-v2.tar.gz # Load the Docker image after downloading
+docker run --gpus all -it --rm \
+  --runtime=nvidia \
+  --privileged \
+  --security-opt seccomp=unconfined \
+  --shm-size=16g \
+  -e OPENBLAS_NUM_THREADS=1 \
+  batnet-image:v2 /bin/bash  # Verify successful image import and launch the container
+```
+#### Note! We recommend using Ubuntu 22.04 or later for optimal compatibility and performance.
+
 ## Quick Start
 
 ### Inference Example
