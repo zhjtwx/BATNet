@@ -6,7 +6,7 @@
 1. [Key Features](#key-features)
 2. [Installation](#installation)
 3. [Inference](#Inference)
-4. [Data Preparation](#data-preparation) 
+4. [Training](#training) 
 5. [Model Architecture](#model-architecture)
 6. [Training](#training)
 7. [Sample Data](#Sample-Data)
@@ -282,48 +282,67 @@ All mask files must be stored as binary masks:
 - 0 indicates background.
 This applies to: lobe.nii.gz and seg_at_mask.nii.gz
 
+## Training
+BAT-Net consists of two complementary components:
+- MG-ATSeg: Multi-granularity adipose tissue segmentation.
+- CE-BATCls: Cross-enhanced brown adipose tissue classification.
+Both models are implemented in PyTorch and trained using a carefully designed multi-stage optimization strategy. To facilitate reproducibility, we also provide a small demonstration dataset that allows users to quickly verify the complete training pipeline.
 
-The --input argument supports a CSV file, a root directory, or multiple case directories. BAT-Net will automatically identify all valid cases and perform inference. The --output argument specifies the CSV file used to save prediction results.
+### Sample Training Data
 
+To help users quickly verify the training pipeline, we provide a lightweight demonstration dataset.
+- 3 cases for MG-ATSeg training
+- 5 cases for CE-BATCls training
 
-    --input
-    Supported input formats:
-
-    1. CSV file
-       - Must contain a 'case_id' column, The case_id stores the input path for each case.
-
-    2. Single root directory
-       - Recursively scans all valid case folders.
-
-    3. Multiple case directories
-       - Filters and keeps only valid cases.
-
-    A valid case directory must satisfy one of the following:
-
-    A. Contains both:
-       - image.nii.gz # Original image
-       - lobe.nii.gz # lung mask segmented from the original image.
-
-    B. Contains both:
-       - ct_at_left_patch.nii.gz # Patches on the left side, cropped from the original image based on the at region.
-       - ct_at_right_patch.nii.gz # Patches on the right side, cropped from the original image based on the at region.
- 
-
-    --output: CSV file for saving results
-      output result: The contents of the CSV file are as follows.
-
-| case_id | prediction |
-|-----------|--------------|
-| input case id | Predicted probability of BAT|
-
-    If the input case is as follows, both the fat segmentation model and the brown fat classification model will be run simultaneously. In addition to outputting the above table, the segmented fat will also be saved in the same path as the original image.
-       - image.nii.gz # Original image
-       - lobe.nii.gz # lung mask segmented from the original image.
-
-    If the input case is as follows, only the brown fat classification model will be run.
-       - ct_at_left_patch.nii.gz # Patches on the left side, cropped from the original image based on the at region.
-       - ct_at_right_patch.nii.gz # Patches on the right side, cropped from the original image based on the at region.
-
+The sample dataset can be downloaded from Zenodo: https://zenodo.org/records/15524145/files/data.zip?download=1.
+After downloading, extract the archive into the BAT-Net root directory.
+#### Directory Structure
+```bash
+BATNet/
+└── data/
+    ├── seg_data/
+    │   ├── train/
+    │   └── test/
+    └── cls_data/
+        ├── train/
+        └── test/
+```
+#### MG-ATSeg Dataset Structure
+```bash
+data/
+└── seg_data/
+    ├── train/
+    │   ├── case_001/
+    │   │   ├── data_png/
+    │   │   └── data_mask/
+    │   └── case_002/
+    └── test/
+```
+##### File Description
+- data_png/
+   - Input CT slices in PNG format.
+- data_mask/
+  - Corresponding adipose tissue segmentation masks.
+Each PNG image must have a matching mask file with the same filename.
+##### Mask Format
+The adipose tissue segmentation mask must be stored as an 8-bit binary PNG image:
+- Foreground (adipose tissue): 255
+- Background: 0
+Each mask filename must exactly match its corresponding input image.
+For example:
+```bash
+data_png/15.png
+data_mask/15.png
+```
+###### Preprocessing Pipeline
+Starting from the original DICOM series, each axial slice undergoes the following preprocessing steps:
+- 1. Convert the DICOM volume to NIfTI format.
+- 2. Apply Hounsfield Unit (HU) windowing:
+     - Lower bound: -300 HU
+     - Upper bound: 200 HU
+- 3. Normalize intensities to the range [0, 255].
+Save each axial slice as an 8-bit grayscale PNG image.
+This preprocessing enhances adipose tissue contrast while suppressing irrelevant structures.
 
 ## Data Preparation
 ### Directory Structure
