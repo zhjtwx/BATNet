@@ -105,7 +105,7 @@ class BATDataset(Dataset):
             if self.save_nii:
                 nib.save(nib.Nifti1Image(left_patch, np.eye(4)), left_patch_path)
                 nib.save(nib.Nifti1Image(right_patch, np.eye(4)), right_patch_path)
-                nib.save(nib.Nifti1Image(left_label, np.eye(4)), left_label_path)
-                nib.save(nib.Nifti1Image(right_label, np.eye(4)), right_label_path)
+                nib.save(nib.Nifti1Image(left_label.astype(np.uint8), np.eye(4)), left_label_path)
+                nib.save(nib.Nifti1Image(right_label.astype(np.uint8), np.eye(4)), right_label_path)
         return left_patch, right_patch, left_label, right_label
 
