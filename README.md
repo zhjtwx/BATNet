@@ -101,10 +101,12 @@ docker run --gpus all -it --rm --runtime=nvidia --shm-size=16g batnet-image:v3 /
 #### Note! We recommend using Ubuntu 22.04 or later for optimal compatibility and performance.
 
 ## Inference
+BAT-Net is a cascaded deep learning framework consisting of two sequential modules: an adipose tissue segmentation model and a brown adipose tissue (BAT) classification model. In this updated release, we have added a new unified inference script, bat_inf.py, which provides a streamlined and flexible interface for model deployment. The script supports multiple input formats and automatically selects the appropriate inference pipeline based on the provided data, making BAT-Net significantly easier to use for both end-to-end prediction and rapid evaluation of preprocessed cases.
 
-### Inference Example
 
-```
+### Usage Examples
+
+bash```
 python bat_inf.py --input data/crop_744/info.csv --output crop_744_inf.csv
 python bat_inf.py --input data/nii_10 --output nii_10_inf.csv
 ```
