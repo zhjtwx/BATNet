@@ -31,9 +31,9 @@ BATNet is a cascaded deep learning framework for **brown adipose tissue (BAT)** 
   - Negative (0% BAT)
   - Ignored (0-10% BAT)
   
-## Installation
+## Quickstart (Inference)
 
-### Environment
+### 1) Install dependencies
 To improve compatibility, security, and long-term maintainability, we have upgraded the BATNet runtime environment. The original release was developed under an earlier software stack, while the updated release adopts a modern and actively maintained environment. Both versions have been fully validated and are fully functional. Users may choose either environment according to their hardware and software requirements.
 #### Environment Comparison
 | Component | Original Environment | Updated Environment |
@@ -48,7 +48,6 @@ To improve compatibility, security, and long-term maintainability, we have upgra
 
 Both the original and updated environments have been extensively validated. On the independent test cohort of 744 cases, both versions achieved an identical AUC of 0.891. In addition, we tested the model on multiple GPU platforms, including the NVIDIA GeForce RTX 3090 and the NVIDIA Tesla V100-SXM2-32GB. While minor numerical differences may occur in the predicted probabilities across different GPU architectures (typically at the fifth decimal place), the overall evaluation metrics—including AUC, sensitivity, and specificity—remain unchanged. 
 
-### installation steps
 #### Updated Environment
 ```bash
 # Clone repository
@@ -81,6 +80,74 @@ pip install -r requirements_old.txt
 The installation typically takes:
 - **15-25 minutes** on a normal desktop with good internet connection
 - May extend to **30-45 minutes** if compilation is required for your specific system
+
+### 2) Download model weights
+Download from Zenodo and extract into the repository root:
+- **Weights**: https://zenodo.org/records/17540420/files/model_weights.zip?download=1
+- **Password**: `batnet`
+
+Expected structure:
+
+```bash
+BATNet/
+├── model_weights/
+│   ├── ce_batcis_model.pth
+│   ├── mg_atseg_model.pth
+│   └── ...
+├── bat_inf.py
+├── pro_at_patch.py
+└── ...
+```
+### 3) Download validation data (optional but recommended)
+
+We provide two complementary validation datasets:
+
+- **Adipose patch dataset (n = 744)**: classification-only (pre-extracted bilateral patches)
+- **Complete CT dataset (n = 10)**: end-to-end inference (CT + lung mask)
+
+Download and extract into `BATNet/data/`:
+
+- **Data**: https://zenodo.org/records/17541503/files/data.zip?download=1
+  **Password**: `batnet`
+
+Example directory layout:
+
+```bash
+BATNet/
+└── data/
+    ├── crop_744/
+    │   ├── info.csv
+    │   ├── case_0001/
+    │   │   ├── ct_at_left_patch.nii.gz
+    │   │   └── ct_at_right_patch.nii.gz
+    │   └── ...
+    └── nii_10/
+        ├── info.csv
+        ├── case_0001/
+        │   ├── image.nii.gz
+        │   └── lobe.nii.gz
+        └── ...
+```
+### 4) Run inference
+
+```bash
+# Classification-only inference using preprocessed patches (744 cases)
+python bat_inf.py --input data/crop_744/info.csv --output crop_744_inf.csv
+
+# End-to-end inference from complete CT scans (10 cases)
+python bat_inf.py --input data/nii_10 --output nii_10_inf.csv
+```
+
+The output CSV contains:
+
+- `case_id`: absolute or original case directory path
+- `prediction`: probability for the positive class
+
+When running end-to-end inference (CT + lung mask), BATNet additionally saves:
+
+- `seg_at_mask.nii.gz`: adipose tissue mask (written into each case directory)
+
+---
 
 ### Docker Environment
 To facilitate rapid validation and reproducibility, we provide a fully pre-configured Docker environment. The Docker package includes:
@@ -115,26 +182,9 @@ The Docker image already includes:
 This means no additional downloads or configuration are required—everything is ready to use immediately after launching the container.
 #### Note! We recommend using Ubuntu 22.04 or later for optimal compatibility and performance.
 
-## Inference
+## Inference details (`bat_inf.py`)
 BATNet is a cascaded deep learning framework consisting of two sequential modules: an adipose tissue segmentation model and a brown adipose tissue (BAT) classification model. In this updated release, we have added a new unified inference script, bat_inf.py, which provides a streamlined and flexible interface for model deployment. The script supports multiple input formats and automatically selects the appropriate inference pipeline based on the provided data, making BATNet significantly easier to use for both end-to-end prediction and rapid evaluation of preprocessed cases.
 
-### Model Weights 
-The model weights can be downloaded from Zenodo: 
-https://zenodo.org/records/17540420/files/model_weights.zip?download=1; Password: batnet
-Note: After downloading, please extract the contents to the root directory of the BATNet project.
-Password: batnet
-The directory structure should look like this:
-```bash
-BATNet/
-├── model_weights/
-│   ├── ce_batcis_model.pth
-│   ├── mg_atseg_model.pth
-│   └── ...
-├── bat_inf.py
-├── pro_at_patch.py
-└── ...
-```
-Please ensure that all weight files are placed inside the model_weights/directory. BATNet will automatically locate and load them during inference.
 
 ### Validation Datasets
 We provide two complementary validation datasets:
