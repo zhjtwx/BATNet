@@ -417,7 +417,7 @@ case_xxxx/
 ```python
 import sys
 sys.path.append('.')
-
+import nibabel as nib
 from pro_at_patch import SymmetricalATProcessor, save_nii
 
 # Initialize processor
@@ -435,17 +435,11 @@ ct_at_left_label, ct_at_right_label = processor.process(
 )
 
 # Save outputs
-save_nii(ct_at_left_patch,
-         './data/cls_data/case_001/ct_at_left_patch.nii.gz')
+nib.save(nib.Nifti1Image(ct_at_left_patch, np.eye(4)), './data/cls_data/case_001/ct_at_left_patch.nii.gz')
+nib.save(nib.Nifti1Image(ct_at_right_patch, np.eye(4)),  './data/cls_data/case_001/ct_at_right_patch.nii.gz')
+nib.save(nib.Nifti1Image(ct_at_left_label, np.eye(4)), './data/cls_data/case_001/ct_at_left_label.nii.gz')
+nib.save(nib.Nifti1Image(ct_at_right_label, np.eye(4)), './data/cls_data/case_001/ct_at_right_label.nii.gz')
 
-save_nii(ct_at_right_patch,
-         './data/cls_data/case_001/ct_at_right_patch.nii.gz')
-
-save_nii(ct_at_left_label,
-         './data/cls_data/case_001/ct_at_left_label.nii.gz')
-
-save_nii(ct_at_right_label,
-         './data/cls_data/case_001/ct_at_right_label.nii.gz')
 ```
 ###### Generated Files
 ```bash
