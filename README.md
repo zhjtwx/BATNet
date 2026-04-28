@@ -103,13 +103,49 @@ docker run --gpus all -it --rm --runtime=nvidia --shm-size=16g batnet-image:v3 /
 ## Inference
 BAT-Net is a cascaded deep learning framework consisting of two sequential modules: an adipose tissue segmentation model and a brown adipose tissue (BAT) classification model. In this updated release, we have added a new unified inference script, bat_inf.py, which provides a streamlined and flexible interface for model deployment. The script supports multiple input formats and automatically selects the appropriate inference pipeline based on the provided data, making BAT-Net significantly easier to use for both end-to-end prediction and rapid evaluation of preprocessed cases.
 
+### Validation Datasets
+We provide two complementary validation datasets:
+#### Adipose Patch Dataset (n = 744)
+This dataset contains preprocessed bilateral adipose patches extracted from the independent holdout cohort. It is designed for validating the BAT classification module only.
+#### Complete CT Dataset (n = 10)
+This dataset contains complete chest CT scans in NIfTI format together with their corresponding lung masks. It enables end-to-end validation of the full BAT-Net pipeline, including adipose tissue segmentation, patch extraction, and BAT classification.
+#### Download
+The validation dataset can be downloaded from Zenodo: https://zenodo.org/records/17541503/files/data.zip?download=1;
+##### Password: batnet
+After downloading and extracting the archive, place the data directory in the BAT-Net project root.
+#### Directory Structure of Validation Datasets
+data/
+├── crop_744/
+│   ├── info.csv
+│   ├── case_0001/
+│   │   ├── ct_at_left_patch.nii.gz
+│   │   └── ct_at_right_patch.nii.gz
+│   ├── case_0002/
+│   │   ├── ct_at_left_patch.nii.gz
+│   │   └── ct_at_right_patch.nii.gz
+│   └── ...
+│
+└── nii_10/
+    ├── info.csv
+    ├── case_0001/
+    │   ├── image.nii.gz
+    │   └── lobe.nii.gz
+    ├── case_0002/
+    │   ├── image.nii.gz
+    │   └── lobe.nii.gz
+    └── ...
 
-### Usage Examples
-
-bash```
+```bash
+# Classification-only inference using preprocessed adipose patches
 python bat_inf.py --input data/crop_744/info.csv --output crop_744_inf.csv
+
+# End-to-end inference from complete CT scans
 python bat_inf.py --input data/nii_10 --output nii_10_inf.csv
 ```
+After downloading and extracting the validation dataset, place the data directory in the BATNet project root and execute the above commands directly.
+
+The --input argument supports a CSV file, a root directory, or multiple case directories. BAT-Net will automatically identify all valid cases and perform inference. The --output argument specifies the CSV file used to save prediction results.
+
     --input
     Supported input formats:
 
