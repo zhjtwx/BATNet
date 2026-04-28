@@ -28,7 +28,7 @@
 ## Installation
 
 ### Environment
-To improve compatibility, security, and long-term maintainability, we have upgraded the BAT-Net runtime environment. The original release was developed under an earlier software stack, while the updated release adopts a modern and actively maintained environment. Both versions have been fully validated and are fully functional. Users may choose either environment according to their hardware and software requirements.
+To improve compatibility, security, and long-term maintainability, we have upgraded the BATNet runtime environment. The original release was developed under an earlier software stack, while the updated release adopts a modern and actively maintained environment. Both versions have been fully validated and are fully functional. Users may choose either environment according to their hardware and software requirements.
 #### Environment Comparison
 | Component | Original Environment | Updated Environment |
 |-----------|--------------|--------------|
@@ -83,14 +83,14 @@ The installation typically takes:
 ### Docker Environment
 To facilitate rapid validation and reproducibility, we provide a fully pre-configured Docker environment. The Docker package includes:
 - **Complete runtime dependencies**
-- **BAT-Net source code**
+- **BATNet source code**
 - **Example datasets**
 - **model weights**
 
 #### Download Link
 The Docker image can be downloaded from:[https://zenodo.org/records/19756491/files/batnet-image-v2.tar.gz?download=1] 
 #### Quick Start
-After downloading the archive, navigate to the directory containing the file and execute the following commands to load the Docker image and launch the BAT-Net runtime environment:
+After downloading the archive, navigate to the directory containing the file and execute the following commands to load the Docker image and launch the BATNet runtime environment:
 ```bash
 docker load -i batnet-image-v3.tar.gz # Load the Docker image after downloading
 docker run --gpus all -it --rm --runtime=nvidia --shm-size=16g batnet-image:v3 /bin/bash
@@ -98,7 +98,7 @@ docker run --gpus all -it --rm --runtime=nvidia --shm-size=16g batnet-image:v3 /
 #### Note! We recommend using Ubuntu 22.04 or later for optimal compatibility and performance.
 
 ## Inference
-BAT-Net is a cascaded deep learning framework consisting of two sequential modules: an adipose tissue segmentation model and a brown adipose tissue (BAT) classification model. In this updated release, we have added a new unified inference script, bat_inf.py, which provides a streamlined and flexible interface for model deployment. The script supports multiple input formats and automatically selects the appropriate inference pipeline based on the provided data, making BAT-Net significantly easier to use for both end-to-end prediction and rapid evaluation of preprocessed cases.
+BATNet is a cascaded deep learning framework consisting of two sequential modules: an adipose tissue segmentation model and a brown adipose tissue (BAT) classification model. In this updated release, we have added a new unified inference script, bat_inf.py, which provides a streamlined and flexible interface for model deployment. The script supports multiple input formats and automatically selects the appropriate inference pipeline based on the provided data, making BATNet significantly easier to use for both end-to-end prediction and rapid evaluation of preprocessed cases.
 
 ### Model Weights 
 The model weights can be downloaded from Zenodo: 
@@ -116,18 +116,18 @@ BATNet/
 ├── pro_at_patch.py
 └── ...
 ```
-Please ensure that all weight files are placed inside the model_weights/directory. BAT-Net will automatically locate and load them during inference.
+Please ensure that all weight files are placed inside the model_weights/directory. BATNet will automatically locate and load them during inference.
 
 ### Validation Datasets
 We provide two complementary validation datasets:
 #### Adipose Patch Dataset (n = 744)
 This dataset contains preprocessed bilateral adipose patches extracted from the independent holdout cohort. It is designed for validating the BAT classification module only.
 #### Complete CT Dataset (n = 10)
-This dataset contains complete chest CT scans in NIfTI format together with their corresponding lung masks. It enables end-to-end validation of the full BAT-Net pipeline, including adipose tissue segmentation, patch extraction, and BAT classification.
+This dataset contains complete chest CT scans in NIfTI format together with their corresponding lung masks. It enables end-to-end validation of the full BATNet pipeline, including adipose tissue segmentation, patch extraction, and BAT classification.
 #### Download
 The validation dataset can be downloaded from Zenodo: https://zenodo.org/records/17541503/files/data.zip?download=1;
 ##### Password: batnet
-After downloading and extracting the archive, place the data directory in the BAT-Net project root.
+After downloading and extracting the archive, place the data directory in the BATNet project root.
 #### Directory Structure of Validation Datasets
 ```bash
 BATNet/
@@ -166,7 +166,7 @@ python bat_inf.py --input data/nii_10 --output nii_10_inf.csv
 ```
 
 #### Input Argument
-BAT-Net provides flexible input handling through the --input argument, allowing users to easily adapt the inference workflow to different data organization styles.
+BATNet provides flexible input handling through the --input argument, allowing users to easily adapt the inference workflow to different data organization styles.
 - CSV file
   The CSV file must contain a case_id column, where each row specifies the path to an individual case.
   ``` bash
@@ -175,7 +175,7 @@ BAT-Net provides flexible input handling through the --input argument, allowing 
   The CSV file format can be found in the provided examples: “./data/crop_744/info.csv” and “./data/nii_10/info.csv”
 
 - Single root directory
-  BAT-Net recursively scans all subdirectories under the specified root directory and automatically identifies all valid cases.
+  BATNet recursively scans all subdirectories under the specified root directory and automatically identifies all valid cases.
   ``` bash
   python bat_inf.py --input data/nii_10 --output nii_10_inf.csv
    ```
@@ -189,7 +189,7 @@ BAT-Net provides flexible input handling through the --input argument, allowing 
    ```
   Only valid case directories will be processed.
   
-### Output Argument
+#### Output Argument
 The --output argument specifies the CSV file used to save prediction results.
 ``` bash
 python bat_inf.py --input data/nii_10 --output nii_10_inf.csv
@@ -200,7 +200,7 @@ Example output:
 | ./data/nii_10/case_20076 | 0.91093576|
 | ./data/nii_10/case_20195 | 0.04492249|
 
-If Input Type 1 (original CT image + lung mask) is used, BAT-Net will additionally save the segmented adipose mask in the same directory as the original image.
+If Input Type 1 (original CT image + lung mask) is used, BATNet will additionally save the segmented adipose mask in the same directory as the original image.
 Example output structure:
 ``` bash
 data/nii_10/
@@ -272,7 +272,7 @@ case_xxxx/
 ├── ct_at_left_patch.nii.gz
 └── ct_at_right_patch.nii.gz
 ```
-These files can then be directly used as input for BAT-Net classification.
+These files can then be directly used as input for BATNet classification.
 #### Important Note
 All mask files must be stored as binary masks:
 - 1 indicates foreground.
@@ -280,7 +280,7 @@ All mask files must be stored as binary masks:
 This applies to: lobe.nii.gz and seg_at_mask.nii.gz
 
 ## Training
-BAT-Net consists of two complementary components:
+BATNet consists of two complementary components:
 - MG-ATSeg: Multi-granularity adipose tissue segmentation.
 - CE-BATCls: Cross-enhanced brown adipose tissue classification.
 Both models are implemented in PyTorch and trained using a carefully designed multi-stage optimization strategy. To facilitate reproducibility, we also provide a small demonstration dataset that allows users to quickly verify the complete training pipeline.
@@ -292,7 +292,7 @@ To help users quickly verify the training pipeline, we provide a lightweight dem
 - 5 cases for CE-BATCls training
 
 The sample dataset can be downloaded from Zenodo: https://zenodo.org/records/15524145/files/data.zip?download=1.
-After downloading, extract the archive into the BAT-Net root directory.
+After downloading, extract the archive into the BATNet root directory.
 #### Directory Structure
 ```bash
 BATNet/
@@ -375,7 +375,7 @@ case_xxxx/
 
 The patch and label files can either be generated offline using pro_at_patch.py or automatically created during training.
 ##### CE-BATCls Data Preparation
-BAT-Net supports two flexible data preparation strategies for CE-BATCls training.
+BATNet supports two flexible data preparation strategies for CE-BATCls training.
 ###### Option 1: End-to-End Online Patch Generation (Recommended)
 Users only need to prepare the following four files:
 ```bash
@@ -387,10 +387,10 @@ case_xxxx/
 ```
 ###### Required Files
 - image.nii.gz: Original chest CT volume in NIfTI format.
-- fat_mask.nii.gz: Adipose tissue mask. If this file is unavailable, BAT-Net will automatically invoke the MG-ATSeg model to generate it during training.
+- fat_mask.nii.gz: Adipose tissue mask. If this file is unavailable, BATNet will automatically invoke the MG-ATSeg model to generate it during training.
 - brown_fat_mask.nii.gz: Ground-truth brown adipose tissue annotation. This file is optional but strongly recommended for supervised training.
 - lobe.nii.gz: Lung mask.
-During training, BAT-Net automatically performs:
+During training, BATNet automatically performs:
 - Bilateral adipose patch extraction
 - Label generation
 - End-to-end CE-BATCls optimization
