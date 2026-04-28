@@ -8,10 +8,7 @@
 3. [Inference](#Inference)
 4. [Training](#training) 
 5. [Model Architecture](#model-architecture)
-6. [Training](#training)
-7. [Sample Data](#Sample-Data)
-8. [Inference validation](#Inference-validation)
-9. [Docker Environment for Quick Validation](#Docker-Environment-for-Quic-Validation)
+
 
 ## Key Features
 
@@ -341,58 +338,147 @@ Starting from the original DICOM series, each axial slice undergoes the followin
      - Lower bound: -300 HU
      - Upper bound: 200 HU
 - 3. Normalize intensities to the range [0, 255].
+
 Save each axial slice as an 8-bit grayscale PNG image.
 This preprocessing enhances adipose tissue contrast while suppressing irrelevant structures.
 
-## Data Preparation
-### Directory Structure
-```python
+#### CE-BATCls Dataset Structure
+```bash
 data/
-├──seg_data/  # Data for MG_ATSeg    
-│    ├── train/
-│    │   ├── case_001/
-│    │   │   ├── data_png/
-│    │   │   │      ├── 0.png
-│    │   │   │      ├── 1.png
-│    │   │   │      └── ...
-│    │   │   └── data_mask/
-│    │   │          ├── 0.png
-│    │   │          ├── 1.png
-│    │   │          └── ...
-│    │   └── case_002/
-│    └── test/
-└──cls_data/ # Data for CE_BATCIs
-     ├── train/
-     │   ├── case_001/
-     │   │   ├── image.nii.gz  # The entire CT is saved in nii format. This path must exist. Input for MG_ATSeg model inference. Each volume has dimensions of (Z, X, Y), aligned along the Z-axis from top to bottom.
-     │   │   ├── fat_mask.nii.gz  # Fat mask. If this path is missing, the MG_ATSeg fat segmentation model will be automatically called for fat segmentation.
-     │   │   ├── brown_fat_mask.nii.gz # Brown fat mask, manually marked with software, if empty, the default brown fat mask mark value is all 0
-     │   │   ├── lobe.nii.gz # This path contains the lung segmentation mask corresponding to the CT scan, the purpose of which is to extract fat above the armpit and remove fat below the armpit.
-     │   │   ├── ct_at_left_label.nii.gz # Labels for left patches, You can call "pro_at_patch.py" to generate it offline, or you can generate it directly in the training model.
-     │   │   ├── ct_at_right_label.nii.gz # Labels for right patches, You can call "pro_at_patch.py" to generate it offline, or you can generate it directly in the training model.
-     │   │   ├── ct_at_left_patch.nii.gz # left patches, You can call "pro_at_patch.py" to generate it offline, or you can generate it directly in the training model.
-     │   │   └── ct_at_right_patch.nii.gz # right patches, You can call "pro_at_patch.py" to generate it offline, or you can generate it directly in the training model.
-     │   └── case_002/
-     └── test/
+└── cls_data/
+    ├── train/
+    │   ├── case_001/
+    │   └── case_002/
+    └── test/
 ```
-### Preprocessing Script
+Each case directory should contain:
+```bash
+case_xxxx/
+├── image.nii.gz
+├── fat_mask.nii.gz
+├── brown_fat_mask.nii.gz
+├── lobe.nii.gz
+├── ct_at_left_label.nii.gz
+├── ct_at_right_label.nii.gz
+├── ct_at_left_patch.nii.gz
+└── ct_at_right_patch.nii.gz
+```
+##### File Description
+- image.nii.gz: Full chest CT volume in NIfTI format.
+- fat_mask.nii.gz: Adipose tissue mask.
+- brown_fat_mask.nii.gz: Ground-truth brown adipose tissue annotation.
+- lobe.nii.gz: Lung mask. Used to extract adipose tissue above the axillary region while excluding inferior adipose tissue.
+- ct_at_left_patch.nii.gz: Left axillary adipose patch.
+- ct_at_right_patch.nii.gz: Right axillary adipose patch.
+- ct_at_left_label.nii.gz: Ground-truth BAT label for the left patch.
+- ct_at_right_label.nii.gz: Ground-truth BAT label for the right patch.
+
+The patch and label files can either be generated offline using pro_at_patch.py or automatically created during training.
+##### CE-BATCls Data Preparation
+BAT-Net supports two flexible data preparation strategies for CE-BATCls training.
+###### Option 1: End-to-End Online Patch Generation (Recommended)
+Users only need to prepare the following four files:
+```bash
+case_xxxx/
+├── image.nii.gz
+├── fat_mask.nii.gz
+├── brown_fat_mask.nii.gz
+└── lobe.nii.gz
+```
+###### Required Files
+- image.nii.gz: Original chest CT volume in NIfTI format.
+- fat_mask.nii.gz: Adipose tissue mask. If this file is unavailable, BAT-Net will automatically invoke the MG-ATSeg model to generate it during training.
+- brown_fat_mask.nii.gz: Ground-truth brown adipose tissue annotation. This file is optional but strongly recommended for supervised training.
+- lobe.nii.gz: Lung mask.
+During training, BAT-Net automatically performs:
+- Bilateral adipose patch extraction
+- Label generation
+- End-to-end CE-BATCls optimization
+The following files will be generated online:
+```bash
+├── ct_at_left_patch.nii.gz
+├── ct_at_right_patch.nii.gz
+├── ct_at_left_label.nii.gz
+└── ct_at_right_label.nii.gz
+```
+This is the simplest and recommended workflow for most users.
+
+###### Option 2: Offline Patch Generation
+Alternatively, users may precompute the bilateral adipose patches and corresponding labels before training. This approach is recommended for large-scale experiments, as it significantly accelerates training.
+###### Required Input Files
+```bash
+case_xxxx/
+├── image.nii.gz
+├── fat_mask.nii.gz
+├── brown_fat_mask.nii.gz
+└── lobe.nii.gz
+```
+###### Patch Generation Example
 ```python
 import sys
 sys.path.append('.')
-from pro_at_patch import SymmetricalATProcessor
-# Initialize 
+
+from pro_at_patch import SymmetricalATProcessor, save_nii
+
+# Initialize processor
 processor = SymmetricalATProcessor(
-    model_file="mg_stseg.pth"  #seg_model_file,Can be None, but when None, there must be a fat_mask.nii.gz file
+    model_file="mg_stseg.pth"  # Optional
 )
-# Run 
-ct_at_left, ct_at_right, left_label, right_label = processor.process(image_file, fat_file, bat_file, lung_file)
-"""
-image_file: Path of the original image (in nii.gz format)；
-fat_file: Path of the fat mask (in nii.gz format), can be None. When it is None, the fat segmentation model (MG_BATCIs) will be invoked to obtain the fat mask.
-bat_file: Path of the bat mask (in nii.gz format), derived from manually annotated brown adipose tissue.
-lung_file: Path of the lung mask (in nii.gz format), Lung mask segmentation derived from TotalSegmentator.
-"""
+
+# Generate bilateral adipose patches
+ct_at_left_patch, ct_at_right_patch, \
+ct_at_left_label, ct_at_right_label = processor.process(
+    image_file,   # ./data/cls_data/case_001/image.nii.gz
+    fat_file,     # ./data/cls_data/case_001/fat_mask.nii.gz
+    bat_file,     # ./data/cls_data/case_001/brown_fat_mask.nii.gz
+    lung_file     # ./data/cls_data/case_001/lobe.nii.gz
+)
+
+# Save outputs
+save_nii(ct_at_left_patch,
+         './data/cls_data/case_001/ct_at_left_patch.nii.gz')
+
+save_nii(ct_at_right_patch,
+         './data/cls_data/case_001/ct_at_right_patch.nii.gz')
+
+save_nii(ct_at_left_label,
+         './data/cls_data/case_001/ct_at_left_label.nii.gz')
+
+save_nii(ct_at_right_label,
+         './data/cls_data/case_001/ct_at_right_label.nii.gz')
 ```
+###### Generated Files
+```bash
+case_xxxx/
+├── ct_at_left_patch.nii.gz
+├── ct_at_right_patch.nii.gz
+├── ct_at_left_label.nii.gz
+└── ct_at_right_label.nii.gz
+```
+These precomputed files can then be directly used by CE-BATCls without requiring online patch extraction.
+##### Recommendation
+- For quick experiments or small datasets, use Option 1.
+- For large-scale training or repeated experiments, use Option 2 to improve efficiency and reduce preprocessing overhead.
+
+### Training Commands
+#### MG-ATSeg Training
+```bash
+cd BATNet
+python MG_ATSeg/train.py
+```
+
+#### CE-BATCls Training
+For simplicity, we demonstrate the end-to-end training pipeline, where adipose segmentation, patch extraction, and BAT classification are performed automatically.
+```bash
+cd BATNet
+python CE_BATCIs/ce_train.py
+```
+#### Notes
+- MG-ATSeg must be trained before CE-BATCls if adipose masks are not already available.
+- During CE-BATCls training, missing adipose masks and adipose patches will be automatically generated when necessary.
+- For large-scale experiments, we recommend precomputing all patches offline using pro_at_patch.py to accelerate training.
+
+
 ## model-architecture
 ### MG-ATSeg Components
 
@@ -408,54 +494,5 @@ lung_file: Path of the lung mask (in nii.gz format), Lung mask segmentation deri
 | Patch Processing Module |   Symmetrical AT Patch Processing Module | pro_at_patch.py |
 | Transformer |   Case-Level Prediction | CE-BATCls/model/resnet_cim.py |
 
-## Training
-### MG-ATSeg Training
-```bash
-cd BATNet
-python MG_ATSeg/train.py # Please modify the corresponding hyperparameters in train.py
-```
-### CE-BATCls Training
-```bash
-cd BATNet
-python CE_BATCIs/ce_train.py # Please modify the corresponding hyperparameters in ce_train.py
-```
-
-## Sample Data
-
-Verification of the training process: We have uploaded 8 chest CT images from the dataset as a demonstration for training (3 for fat segmentation and 5 for brown fat classification). Please download the data from the following link: https://zenodo.org/records/15524145/files/data.zip?download=1. After downloading, please unzip the data into the BATNet directory. The directory structure of the data can be found in the "Directory Structure" section. Once downloaded, simply run "MG-ATSeg Training" and "CE-BATCls Training" to train the respective models.
-
-## Inference validation
-### Model Weights 
-The model weights can be downloaded from Zenodo: 
-https://zenodo.org/records/17540420/files/model_weights.zip?download=1; Password: batnet
-Note: After downloading, please extract the contents to the root directory of the BATNet project.
-Password: batnet
-
-### Validation dataset
-To support comprehensive validation, we provided adipose tissue segmentation patches extracted from the holdout set (n = 744), which were used for evaluating the classification module. We also provided 10 complete CT scans (.nii format) selected from the holdout set, enabling end-to-end validation of the entire pipeline, including both adipose segmentation and whole-slice BAT classification.
-
-The adipose tissue segmentation patches (n = 744) and complete CT scans (n = 10) can be downloaded from Zenodo:
-https://zenodo.org/records/17541503/files/data.zip?download=1; Password: batnet
-
-### infer test
-Once both the model and data are in place, users can run the inference script directly via:
-1. python CE_BATCIs/ce_infer.py
-2. Follow the inference procedure described in the Inference Example section.
-
-## Docker Environment for Quick Validation
-To facilitate quick validation and testing, we provide a pre-configured Docker environment. This package contains a fully set-up runtime environment, along with code, datasets, and pre-trained model weights. 
-### Download Link
-[https://zenodo.org/records/19756491/files/batnet-image-v2.tar.gz?download=1] 
-### Quick Start
-```bash
-docker load -i batnet-image-v2.tar.gz # Load the Docker image after downloading
-docker run --gpus all -it --rm \
-  --runtime=nvidia \
-  --privileged \
-  --security-opt seccomp=unconfined \
-  --shm-size=16g \
-  -e OPENBLAS_NUM_THREADS=1 \
-  batnet-image:v2 /bin/bash  # Verify successful image import and launch the container
-```
 #### Note! We recommend using Ubuntu 22.04 or later for optimal compatibility and performance.
    
