@@ -116,7 +116,7 @@ BATNet/
 ├── pro_at_patch.py
 └── ...
 ```
-Please ensure that all weight files are placed inside the model/ directory. BAT-Net will automatically locate and load them during inference.
+Please ensure that all weight files are placed inside the model_weights/directory. BAT-Net will automatically locate and load them during inference.
 
 ### Validation Datasets
 We provide two complementary validation datasets:
