@@ -182,9 +182,8 @@ The Docker image already includes:
 This means no additional downloads or configuration are required—everything is ready to use immediately after launching the container.
 #### Note! We recommend using Ubuntu 22.04 or later for optimal compatibility and performance.
 
-## Inference details (`bat_inf.py`)
+## Inference details
 BATNet is a cascaded deep learning framework consisting of two sequential modules: an adipose tissue segmentation model and a brown adipose tissue (BAT) classification model. In this updated release, we have added a new unified inference script, bat_inf.py, which provides a streamlined and flexible interface for model deployment. The script supports multiple input formats and automatically selects the appropriate inference pipeline based on the provided data, making BATNet significantly easier to use for both end-to-end prediction and rapid evaluation of preprocessed cases.
-
 
 ### Validation Datasets
 We provide two complementary validation datasets:
@@ -192,10 +191,7 @@ We provide two complementary validation datasets:
 This dataset contains preprocessed bilateral adipose patches extracted from the independent holdout cohort. It is designed for validating the BAT classification module only.
 #### Complete CT Dataset (n = 10)
 This dataset contains complete chest CT scans in NIfTI format together with their corresponding lung masks. It enables end-to-end validation of the full BATNet pipeline, including adipose tissue segmentation, patch extraction, and BAT classification.
-#### Download
-The validation dataset can be downloaded from Zenodo: https://zenodo.org/records/17541503/files/data.zip?download=1;
-##### Password: batnet
-After downloading and extracting the archive, place the data directory in the BATNet project root.
+
 #### Directory Structure of Validation Datasets
 ```bash
 BATNet/
