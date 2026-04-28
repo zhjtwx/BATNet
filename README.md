@@ -114,6 +114,7 @@ The validation dataset can be downloaded from Zenodo: https://zenodo.org/records
 ##### Password: batnet
 After downloading and extracting the archive, place the data directory in the BAT-Net project root.
 #### Directory Structure of Validation Datasets
+```ba sh
 data/
 ├── crop_744/
 │   ├── info.csv
@@ -134,6 +135,7 @@ data/
     │   ├── image.nii.gz
     │   └── lobe.nii.gz
     └── ...
+```
 
 ```bash
 # Classification-only inference using preprocessed adipose patches
