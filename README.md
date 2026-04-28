@@ -136,15 +136,62 @@ data/
     │   └── lobe.nii.gz
     └── ...
 ```
-
+### Usage Examples
 ```bash
-# Classification-only inference using preprocessed adipose patches
+# Classification-only inference using preprocessed adipose patches(744 cases)
 python bat_inf.py --input data/crop_744/info.csv --output crop_744_inf.csv
 
-# End-to-end inference from complete CT scans
+# End-to-end inference from complete CT scans (10 cases)
 python bat_inf.py --input data/nii_10 --output nii_10_inf.csv
 ```
-After downloading and extracting the validation dataset, place the data directory in the BATNet project root and execute the above commands directly.
+
+#### Input Argument
+BAT-Net provides flexible input handling through the --input argument, allowing users to easily adapt the inference workflow to different data organization styles.
+- CSV file
+  The CSV file must contain a case_id column, where each row specifies the path to an individual case.
+  ``` bash
+  python bat_inf.py --input data/crop_744/info.csv --output crop_744_inf.csv
+  ```
+  The CSV file format can be found in the provided examples: “./data/crop_744/info.csv” and “./data/nii_10/info.csv”
+
+- Single root directory
+  BAT-Net recursively scans all subdirectories under the specified root directory and automatically identifies all valid cases.
+  ``` bash
+  python bat_inf.py --input data/nii_10 --output nii_10_inf.csv
+   ```
+  This is the recommended option when all cases are organized under a single parent directory.
+- Multiple case directories
+  Users may also specify multiple case directories directly.
+  ``` bash
+  python bat_inf.py \
+    --input data/nii_10/case_0001 data/nii_10/case_0002 \
+    --output selected_cases_inf.csv
+   ```
+  Only valid case directories will be processed.
+### Output Argument
+The --output argument specifies the CSV file used to save prediction results.
+``` bash
+python bat_inf.py --input data/nii_10 --output nii_10_inf.csv
+ ```
+Example output:
+| case_id | prediction |
+|-----------|--------------|
+| ./data/nii_10/case_20076 | 0.91093576|
+| ./data/nii_10/case_20195 | 0.04492249|
+
+If Input Type 1 (original CT image + lung mask) is used, BAT-Net will additionally save the segmented adipose mask in the same directory as the original image.
+Example output structure:
+``` bash
+data/nii_10/
+└── case_0001/
+    ├── image.nii.gz
+    ├── lobe.nii.gz
+    └── seg_at_mask.nii.gz
+ ```
+Where: image.nii.gz — Original CT image. lobe.nii.gz — Input lung mask. seg_at_mask.nii.gz — Automatically generated adipose tissue segmentation mask
+This additional output is only generated during end-to-end inference.
+
+
 
 The --input argument supports a CSV file, a root directory, or multiple case directories. BAT-Net will automatically identify all valid cases and perform inference. The --output argument specifies the CSV file used to save prediction results.
 
