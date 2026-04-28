@@ -78,7 +78,7 @@ pip install torch==1.10.0+cu113 torchvision==0.11.0+cu113 -f https://download.py
 3.Install Other
 pip install -r requirements_old.txt
 ```
-### Expected Install Time
+#### Expected Install Time
 The installation typically takes:
 - **15-25 minutes** on a normal desktop with good internet connection
 - May extend to **30-45 minutes** if compilation is required for your specific system
