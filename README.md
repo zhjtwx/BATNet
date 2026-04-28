@@ -85,10 +85,10 @@ The installation typically takes:
 
 ### Docker Environment
 To facilitate rapid validation and reproducibility, we provide a fully pre-configured Docker environment. The Docker package includes:
--**Complete runtime dependencies**
--**BAT-Net source code**
--**Example datasets**
--**model weights**
+- **Complete runtime dependencies**
+- **BAT-Net source code**
+- **Example datasets**
+- **model weights**
 
 #### Download Link
 The Docker image can be downloaded from:[https://zenodo.org/records/19756491/files/batnet-image-v2.tar.gz?download=1] 
