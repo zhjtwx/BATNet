@@ -5,7 +5,7 @@
 ## Table of Contents
 1. [Key Features](#key-features)
 2. [Installation](#installation)
-3. [Quick Start](#quick-start)
+3. [Inference](#Inference)
 4. [Data Preparation](#data-preparation) 
 5. [Model Architecture](#model-architecture)
 6. [Training](#training)
@@ -100,7 +100,7 @@ docker run --gpus all -it --rm --runtime=nvidia --shm-size=16g batnet-image:v3 /
 ```
 #### Note! We recommend using Ubuntu 22.04 or later for optimal compatibility and performance.
 
-## Quick Start
+## Inference
 
 ### Inference Example
 
