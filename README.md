@@ -45,7 +45,7 @@ To improve compatibility, security, and long-term maintainability, we have upgra
 
 Both the original and updated environments have been extensively validated. On the independent test cohort of 744 cases, both versions achieved an identical AUC of 0.891. In addition, we tested the model on multiple GPU platforms, including the NVIDIA GeForce RTX 3090 and the NVIDIA Tesla V100-SXM2-32GB. While minor numerical differences may occur in the predicted probabilities across different GPU architectures (typically at the fifth decimal place), the overall evaluation metrics—including AUC, sensitivity, and specificity—remain unchanged. 
 
-### Environmental installation 
+### installation steps
 #### Updated Environment
 ```bash
 # Clone repository
