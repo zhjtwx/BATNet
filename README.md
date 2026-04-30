@@ -43,7 +43,7 @@ We provide a pre-configured Docker image for rapid validation and reproducibilit
 
 #### 1.2.2 Download & load the image
 
-- **Docker image archive**: https://zenodo.org/records/19837616/files/batnet-image-v3.tar.gz?download=1
+- **Docker image archive**: [https://zenodo.org/records/19837616/files/batnet-image-v3.tar.gz?download=1](https://zenodo.org/records/19886391/files/batnet-image-v3.tar.gz?download=1)
 - Total download size: 15.6 GB
 
 ```bash
