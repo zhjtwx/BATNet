@@ -485,8 +485,8 @@ Optional output CSV file. If omitted, results are printed to the terminal only. 
 
 | case_id | prediction |
 |-----------|--------------|
-| ./data/nii_10/case_20076 | 0.91093576|
-| ./data/nii_10/case_20195 | 0.04492249|
+| ./data/nii_10/case_20076 | 0.910751 |
+| ./data/nii_10/case_20195 | 0.044879 |
 
 case_id: Absolute case directory path; prediction: BAT probability score. Higher scores indicate a greater likelihood of BAT positivity.
 
